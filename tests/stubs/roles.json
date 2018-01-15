@@ -1,0 +1,22 @@
+[
+    {
+        "id": 1,
+        "type": "Admin",
+        "permissions": ["Publish", "Edit", "Write", "Add-User", "Read", "Comment"]
+    },
+    {
+        "id": 2,
+        "type": "Publisher",
+        "permissions": ["Publish", "Edit", "Write", "Read"]
+    },
+    {
+        "id": 3,
+        "type": "User",
+        "permissions": ["Read", "Comment"]
+    },
+    {
+        "id": 4,
+        "type": "Guest",
+        "permissions": ["Read"]
+    }
+]
