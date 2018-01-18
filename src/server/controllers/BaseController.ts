@@ -63,8 +63,8 @@ export class BaseController {
         const entity = this.modelObj;
         this.sanitize(params);
         return entity.save()
-            .then(this.handleSuccess)
-            .catch(this.handleError);
+            .then(this.handleSuccess.bind(this))
+            .catch(this.handleError.bind(this));
     }
 
     /**
