@@ -7,7 +7,7 @@ const tsProject = ts.createProject('tsconfig.json');
 
 gulp.task('cleanDist', () => {
 	gulp.src(['dist', '!.gitignore']).pipe(clean());
-})
+});
 
 gulp.task('scripts', () => {
 	const tsResult = tsProject.src()
@@ -24,7 +24,7 @@ gulp.task('scripts', () => {
 
 gulp.task('watch', ['scripts'], () => {
 	gulp.watch('src/**/**/*.ts', ['scripts']);
-});	
+});
 
 gulp.task('dev', ['watch']);
 gulp.task('build', done => {

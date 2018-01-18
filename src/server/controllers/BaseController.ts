@@ -1,7 +1,6 @@
 import * as express from "express";
 // import { Req, Res } from 'routing-controllers';
 import { Connection, getConnection } from "typeorm";
-import {User} from "../models/User";
 
 /**
  * Base Controller class to contain common methods/properties accessible
@@ -34,8 +33,8 @@ export class BaseController {
         const self = this;
         this.setUp(res);
         return this.modelObj.find()
-            .then(self.handleSuccess)
-            .catch(self.handleError);
+            .then(self.handleSuccess.bind(self))
+            .catch(self.handleError.bind(self));
     }
 
     /**
@@ -48,8 +47,8 @@ export class BaseController {
     public getOne(id: string|number, res: express.Response) {
         this.setUp(res);
         return this.modelObj.findOne({id})
-            .then(this.handleSuccess)
-            .catch(this.handleError);
+            .then(this.handleSuccess.bind(this))
+            .catch(this.handleError.bind(this));
     }
 
     /**
@@ -82,10 +81,10 @@ export class BaseController {
         return this.modelObj.findOne({id})
             .then((entity) => {
                 return entity.save()
-                    .then(this.handleSuccess)
-                    .catch(this.handleError);
+                    .then(this.handleSuccess.bind(this))
+                    .catch(this.handleError.bind(this));
             })
-            .catch(this.handleError);
+            .catch(this.handleError.bind(this));
     }
 
     /**
@@ -225,6 +224,13 @@ export class BaseController {
      * @returns {any | Array}
      */
     private getExcluded(method?: string) {
-        return this.modelObj.exclude || this.modelObj.excludeByHttpMethod[method] || [];
+        if (method && this.modelObj.hasOwnProperty("excludeByHttpMethod") &&
+            this.modelObj.excludeByHttpMethod[method] !== undefined) {
+            return this.modelObj.excludeByHttpMethod[method];
+        } else if (this.modelObj.hasOwnProperty("exclude")) {
+            return this.modelObj.exclude;
+        } else {
+            return [];
+        }
     }
 }

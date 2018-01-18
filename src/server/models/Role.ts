@@ -1,54 +1,54 @@
-import * as typeOrm from 'typeorm';
+import * as typeOrm from "typeorm";
+import { BaseModel } from "./BaseModel";
 
 /**
- * The Roles that can be assigned to users
+ * @class Role - The Roles that can be assigned to users
  */
 @typeOrm.Entity("role")
-export class Role extends typeOrm.BaseEntity {
+export class Role extends BaseModel {
 
-    static publish = 'Publish';
-    static edit = 'Edit';
-    static write = 'Write';
-    static addUser = 'Add-User';
-    static read = 'Read';
-    static comment = 'Comment';
+    public static publish = "Publish";
+    public static edit = "Edit";
+    public static write = "Write";
+    public static addUser = "Add-User";
+    public static read = "Read";
+    public static comment = "Comment";
 
     /**
      * @property {number} id - The Role Table Id.
      */
     @typeOrm.PrimaryGeneratedColumn()
-    id: number;
+    public id: number;
 
     /**
      * @property {string} type - The Role name.
      */
     @typeOrm.Column({unique: true})
-    type: string;
+    public type: string;
 
     /**
      * @property {string[]} permissions - An Array of allowed action. The valid actions
      *                                    are 'Publish', 'Write', 'Edit', 'Add User', 'Read'.
      */
     @typeOrm.Column("varchar", { isArray: true, length: 20 })
-    permissions: string[];
+    public permissions: string[];
 
     /**
      * @property {Date} updatedAt - The last update date & time.
      */
     @typeOrm.UpdateDateColumn()
-    updatedAt: Date;
+    public updatedAt: Date;
 
     /**
      * @property {Date} createdAt - The date & time the entry was created at.
      */
     @typeOrm.CreateDateColumn()
-    createdAt: Date;
-
+    public createdAt: Date;
 
     /**
      * Add given Permisson to the Permissions array property
-     * 
-     * @param {string} permission 
+     *
+     * @param {string} permission
      * @returns {this}
      */
     public can(permission: string): this {

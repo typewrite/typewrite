@@ -76,6 +76,6 @@ export class UserController extends BaseController {
      */
     @Delete("/user/:id")
     public deleteUser(@Param("id") id: string, @Res() res: express.Response) {
-        return this.softDeleteEntity(id);
+        return this.softDeleteEntity(id, res);
     }
 }

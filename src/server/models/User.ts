@@ -1,162 +1,161 @@
-import * as typeOrm from 'typeorm';
-import { Role } from './Role';
-import * as moment from 'moment';
-import * as jwt from 'jsonwebtoken';
-import * as bcryptjs from 'bcryptjs';
-//let bcrypt = require('bcryptjs');
+import * as bcryptjs from "bcryptjs";
+import * as typeOrm from "typeorm";
+import { BaseModel } from "./BaseModel";
+import { Role } from "./Role";
 
 /**
- * User Entity
+ * @class User - User Entity
  */
-@typeOrm.Entity('user')
-export class User extends typeOrm.BaseEntity {
+@typeOrm.Entity("user")
+export class User extends BaseModel {
 
-    static statusActive = "Active";
-    static statusSuspended = "Suspended";
-    static statusDeleted = "Deleted";
-    static exclude: string[] = ['emailVerifyToken', 'password', 'salt', 'passwordResetToken'];
-    static excludeByHttpMethod: object = {
-        get: ['emailVerifyToken', 'password', 'salt', 'passwordResetToken'],
-        post: ['emailVerifyToken', 'salt', 'passwordResetToken'],
-        put: ['emailVerifyToken', 'password', 'salt', 'passwordResetToken'],
-    }
+    public static statusActive = "Active";
+    public static statusSuspended = "Suspended";
+    public static statusDeleted = "Deleted";
+    public static excludeByHttpMethod: object = {
+        get: ["emailVerifyToken", "password", "salt", "passwordResetToken"],
+        post: ["emailVerifyToken", "salt", "passwordResetToken"],
+        put: ["emailVerifyToken", "password", "salt", "passwordResetToken"],
+    };
 
     /**
      * @property {number} id - Auto generated Table Id.
      */
-    @typeOrm.PrimaryGeneratedColumn('uuid')
-    id: string;
+    @typeOrm.PrimaryColumn()
+    public id: string;
+
+    /**
+     * @protected {string} uuid - UUID
+     */
+    @typeOrm.Column({ unique: true })
+    public uuid: string;
 
     /**
      * @property {string} firstName - User First name.
      */
-    @typeOrm.Column({ type:'varchar', length: 100 })
-    firstName: string;
+    @typeOrm.Column({ length: 100 })
+    public firstName: string;
 
     /**
      * @property {string} lastName - User Last name.
      */
-    @typeOrm.Column({ type:'varchar', length: 100 })
-    lastName: string;
+    @typeOrm.Column({ length: 100 })
+    public lastName: string;
 
     /**
      * @property {string} userName - Username.
      */
     @typeOrm.Column()
-    userName: string;
+    public userName: string;
 
     /**
      * @property {string} email - User email address.
      */
     @typeOrm.Column({ unique: true })
-    email: string;
+    public email: string;
 
     /**
      * @property {Role} role - The role user belongs to.
      */
-    @typeOrm.ManyToOne(type => Role)
-    role: Role;
+    @typeOrm.ManyToOne((type) => Role)
+    public role: Role;
 
     /**
      * @property {boolean} emailIsVerified - Set to true if user's email has been Verified.
      */
     @typeOrm.Column({ default: false })
-    emailIsVerified: boolean;
+    public emailIsVerified: boolean;
 
     /**
      * @property {string} emailVerifyToken - Token to use in Email to verify user email.
      */
     @typeOrm.Column({ nullable: true })
-    emailVerifyToken: string;
+    public emailVerifyToken: string;
 
     /**
      * @property {string} password - User hashed password
      */
     @typeOrm.Column()
-    password: string;
+    public password: string;
 
     /**
      * @property {string} salt - Salt to be used for encryption
      */
     @typeOrm.Column()
-    salt: string;
+    public salt: string;
 
     /**
      * @property {string} passwordResetToken - User password reset token
      */
     @typeOrm.Column({ nullable: true })
-    passwordResetToken: string;
+    public passwordResetToken: string;
 
     /**
      * @property {string} status - User status
      */
     @typeOrm.Column({ default: User.statusActive })
-    status: string
+    public status: string;
 
     /**
      * @property {Date} updatedAt - The last update date & time.
      */
     @typeOrm.UpdateDateColumn()
-    updatedAt: Date;
+    public updatedAt: Date;
 
     /**
      * @property {Date} createdAt - The date & time the entry was created at.
      */
     @typeOrm.CreateDateColumn()
-    createdAt: Date;
+    public createdAt: Date;
 
     /**
      * Hash the password before saving in database
-     * 
-     * @param password 
+     *
+     * @param password
      */
     @typeOrm.BeforeInsert()
     public hashPass(password: string|null): this {
-        let pwd = password || this.password;
+        const pwd = password || this.password;
+        this.uuid = this.generateUUID();
+        this.id = this.generateShortId(this.uuid);
         this.salt = bcryptjs.genSaltSync(10);
         this.password = bcryptjs.hashSync(pwd, this.salt);
         return this;
     }
-    
 
     /**
-     * Return a JWT token with current user (object) as payload
-     * 
-     * @returns {string}
-     */
-    private createToken(): string {
-        let user = {
-            id: this.id,
-            firstName: this.firstName,
-            lastName: this.lastName,
-            email: this.email,
-            userName: this.userName,
-        };
-        let ttl =  parseInt(process.env.APP_TOKEN_EXPIRY);
-        let expires = moment().utc().add({days: ttl}).unix();
-        let token = jwt.sign(user, process.env.APP_SECRET, {expiresIn: expires});
-
-        return token;
-    }
-
-    /**
-     * Generates and binds email verfication (JWT) token to current User Object
-     * 
+     * Generates and binds email verification (JWT) token to current User Object
+     *
      * @returns {User}
      */
     public createEmailVerifyToken(): this {
-        this.emailVerifyToken = this.createToken();
+        this.emailVerifyToken = this.createUserToken();
         return this;
     }
 
     /**
      * Generates and binds password reset (JWT) token to current User Object
-     * 
+     *
      * @returns {User}
      */
     public createPasswordResetToken(): this {
-        this.passwordResetToken = this.createToken();
+        this.passwordResetToken = this.createUserToken();
         return this;
     }
-    
+
+    /**
+     * Return a JWT token with current user (object) as payload
+     *
+     * @returns {string}
+     */
+    private createUserToken(): string {
+        const user = {
+            email: this.email,
+            firstName: this.firstName,
+            id: this.id,
+            lastName: this.lastName,
+            userName: this.userName,
+        };
+        return this.createToken(user);
+    }
 }
