@@ -27,12 +27,14 @@ export class BaseController {
      * Common method to handle retrieving of all Entities.
      *
      * @param {e.Response} res - The express Response object.
+     * @param {any} queryParams - The Parameters to control pagination and limits.
      * @returns {Promise<e.Response | T>} - Returns an express Response object with JSON data.
      */
-    public getAll(res: express.Response) {
+    public getAll(res: express.Response, queryParams?: any) {
+        const limit = queryParams.limit ? queryParams.limit : 100;
         const self = this;
         this.setUp(res);
-        return this.modelObj.find()
+        return this.modelObj.find({ limit })
             .then(self.handleSuccess.bind(self))
             .catch(self.handleError.bind(self));
     }
@@ -60,9 +62,9 @@ export class BaseController {
      */
     public addEntity(params: object|any, res: express.Response) {
         this.setUp(res);
-        const entity = this.modelObj;
         this.sanitize(params);
-        return entity.save()
+        const entityRepo = this.db.getRepository(this.modelName);
+        return entityRepo.save(params)
             .then(this.handleSuccess.bind(this))
             .catch(this.handleError.bind(this));
     }

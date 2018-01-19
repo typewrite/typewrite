@@ -5,6 +5,8 @@ node_modules/
 *.sublime-project
 *.sublime-workspace
 tmp/
+ormconfig.json
 dist
 
 !dist/.gitignore
+!.test.env
