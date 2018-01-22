@@ -130,11 +130,30 @@ class Server {
                 return [];
             }
             if (param.indexOf(",") > -1) {
-                return param.split(",");
+                return this.getAbsolutePaths(param.split(","));
             } else {
-                return [param as string];
+                return this.getAbsolutePaths([param as string]);
             }
         }
+    }
+
+    /**
+     * Convert relative path to absolute paths.
+     *
+     * @param {string[]} relativePaths
+     * @returns {string[]}
+     */
+    private getAbsolutePaths(relativePaths: string[]): string[] {
+        if (!(relativePaths instanceof Array)) {
+            relativePaths = [relativePaths];
+        }
+        relativePaths.forEach((value, key) => {
+            if (value.indexOf("/") !== 0) {
+                value = "/" + value;
+            }
+            relativePaths[key] = __dirname + value;
+        });
+        return relativePaths;
     }
 }
 

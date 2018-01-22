@@ -1,5 +1,5 @@
 import * as express from "express";
-import { Body, Delete, Get, JsonController, Param, Post, Put, Res } from "routing-controllers";
+import {Body, Delete, Get, JsonController, Param, Post, Put, QueryParams, Req, Res} from "routing-controllers";
 import { User } from "../models/User";
 import { BaseController } from "./BaseController";
 
@@ -17,13 +17,15 @@ export class UserController extends BaseController {
     /**
      * Get all Users.
      *
+     * @param {e.Request} req - The express request object.
      * @param {e.Response} res - The express response object.
+     * @param {any} params - The query parameters.
      * @returns {Promise<Response | T>} - An express Response object with the JSON response,
      *                                    wrapped in a Promise.
      */
     @Get("/users")
-    public getAllUsers(@Res() res: express.Response) {
-        return this.getAll(res);
+    public getAllUsers(@Req() req: express.Request, @Res() res: express.Response, @QueryParams() params: any) {
+        return this.getAll(req, res, params);
     }
 
     /**

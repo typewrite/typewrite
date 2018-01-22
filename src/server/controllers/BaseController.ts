@@ -1,6 +1,6 @@
 import * as express from "express";
 // import { Req, Res } from 'routing-controllers';
-import { Connection, getConnection } from "typeorm";
+import {BaseEntity, Connection, getConnection} from "typeorm";
 
 /**
  * Base Controller class to contain common methods/properties accessible
@@ -17,24 +17,52 @@ export class BaseController {
     /** @param {Connection} db - The typeOrm database connection object */
     protected db: Connection = getConnection();
     /** @param {object | any} jsonResponse - The common JSON response object template */
-    protected jsonResponse: any|object = { status: "" };
+    protected jsonResponse: any | object = { status: "" };
     /** @param {string} modelName - The model name in current controller context */
     protected modelName: string;
-    /** @param {object | any} modelObj - The model object in current controller context */
-    protected modelObj: any|object;
+    /** @param {BaseEntity} modelObj - The model object in current controller context */
+    protected modelObj: any | BaseEntity;
+    /** @param {object} pagination - The property holds pagination info to be consumed by the successHandler. */
+    protected pagination: any | object;
 
     /**
      * Common method to handle retrieving of all Entities.
      *
+     * @param {e.Request} req - The express Request object.
      * @param {e.Response} res - The express Response object.
      * @param {any} queryParams - The Parameters to control pagination and limits.
      * @returns {Promise<e.Response | T>} - Returns an express Response object with JSON data.
      */
-    public getAll(res: express.Response, queryParams?: any) {
-        const limit = queryParams.limit ? queryParams.limit : 100;
+    public async getAll(req: express.Request, res: express.Response, queryParams?: any) {
         const self = this;
+
+        const limit = queryParams !== undefined && queryParams.hasOwnProperty("limit") ? queryParams.limit : 100;
+        const count = queryParams !== undefined &&
+            queryParams.hasOwnProperty("count") ? queryParams.count : await this.modelObj.count();
+        const totalPages = limit > count ? 1 : (count / limit);
+        const currentPage = queryParams !== undefined && queryParams.hasOwnProperty("page") ? queryParams.page : 1;
+        const nextPage = currentPage === totalPages ? currentPage : (currentPage + 1);
+        const prevPage = currentPage === 1 ? 1 : (currentPage - 1);
+        let next, prev;
+        next = prev = req.path + "?";
+        next = `${next}page=${nextPage}&limit=${limit}&count=${count}&totalPages=${totalPages}`;
+        prev = `${prev}page=${prevPage}&limit=${limit}&count=${count}&totalPages=${totalPages}`;
+
+        const pagination = {
+            currentPage,
+            totalPages,
+            count,
+            limit,
+            next,
+            prev,
+        };
+
+        this.setPagination(pagination);
+
+        const skip = (currentPage - 1) * limit;
+
         this.setUp(res);
-        return this.modelObj.find({ limit })
+        return this.modelObj.find({ skip, take: limit })
             .then(self.handleSuccess.bind(self))
             .catch(self.handleError.bind(self));
     }
@@ -193,6 +221,7 @@ export class BaseController {
         // sanitize entity with its exclude list
         this.sanitize(response);
         obj[modelName] = response;
+        this.addPagination(obj);
         const json = this.successJson(obj);
         this.appResponse.status(200);
         return this.appResponse.json(json);
@@ -203,8 +232,29 @@ export class BaseController {
      *
      * @param {express.Response} res - The express response object.
      */
-    private setUp(res: express.Response) {
+    private setUp(res: express.Response): void {
         this.appResponse = res;
+    }
+
+    /**
+     * Set pagination meta information.
+     *
+     * @param {Object} paginationObj
+     */
+    private setPagination(paginationObj: object): void {
+        this.pagination = paginationObj;
+    }
+
+    /**
+     * Add pagination information to the given object.
+     *
+     * @param {Object} obj
+     */
+    private addPagination(obj: any|object) {
+        if (this.pagination !== undefined) {
+            obj.pagination = this.pagination;
+        }
+        return obj;
     }
 
     /**

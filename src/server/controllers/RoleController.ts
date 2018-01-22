@@ -1,5 +1,5 @@
 import * as express from "express";
-import { Body, Delete, Get, JsonController, Param, Post, Put, Res } from "routing-controllers";
+import {Body, Delete, Get, JsonController, Param, Post, Put, QueryParams, Req, Res} from "routing-controllers";
 import { Role } from "../models/Role";
 import { BaseController } from "./BaseController";
 
@@ -17,12 +17,14 @@ export class RoleController extends BaseController {
     /**
      * Gets All Roles.
      *
+     * @param {e.Request} req - The express request object.
      * @param {e.Response} res - The express response object.
+     * @param {any} params - Additional query params for pagination.
      * @returns {Promise<Response | T>} - Return the express response object containing the json.
      */
     @Get("/roles")
-    public getAllRoles(@Res() res: express.Response) {
-        return this.getAll(res);
+    public getAllRoles(@Req() req: express.Request, @Res() res: express.Response, @QueryParams() params: any) {
+        return this.getAll(req, res, params);
     }
 
     /**
