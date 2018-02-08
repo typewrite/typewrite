@@ -6,7 +6,7 @@ const sourcemaps = require('gulp-sourcemaps');
 const tsProject = ts.createProject('tsconfig.json');
 
 gulp.task('cleanDist', () => {
-	gulp.src(['dist', '!.gitignore']).pipe(clean());
+	gulp.src(['dist', 'dist/!.gitignore']).pipe(clean());
 });
 
 gulp.task('scripts', () => {

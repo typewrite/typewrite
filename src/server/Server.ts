@@ -1,16 +1,57 @@
-import * as bodyParser from "body-parser";
-import chalk from "chalk";
-import * as express from "express";
-import * as logger from "morgan";
 import "reflect-metadata";
-import {createExpressServer} from "routing-controllers";
-import {Connection, createConnection} from "typeorm";
+import * as bodyParser from "body-parser";
+import * as compression from "compression";
+import * as express from "express";
+import * as fs from "fs";
+import * as https from "https";
+import * as debug from "debug";
+import * as nunjucks from "nunjucks";
+import * as helmet from "helmet";
+
+import logger from "../server/utils/logger";
+import Config from "../config/Config";
+
+import { inspect } from "util";
+import { Environment } from "nunjucks";
+import { useExpressServer } from "routing-controllers";
+import { Connection, createConnection } from "typeorm";
+import { isProduction, sslCertExists, sslKeyExists } from "../server/utils/commonMethods";
 
 /**
  * Creates and configures an ExpressJS web server.
  * @class
  */
-class Server {
+export default class Server {
+
+    // ----------------------------------------------------------------------
+    // Static Properties & Methods
+    // ----------------------------------------------------------------------
+
+    /**
+     * @static @param {object} server - The Server Object.
+     */
+    public static server;
+
+    /**
+     * Static method to normalize the port parameter.
+     *
+     * @param {number | string} val - The Port to be normalized.
+     * @returns {number} - Normalized port value, as number.
+     */
+    public static normalizePort(val: number | string): number {
+        const truePort: number = (typeof val === "string") ? parseInt(val, 10) : val;
+        if (isNaN(truePort)) {
+            return 3000;
+        } else if (truePort >= 0) {
+            return truePort;
+        } else {
+            return 3000;
+        }
+    }
+
+    // ----------------------------------------------------------------------
+    // Properties (non-static)
+    // ----------------------------------------------------------------------
 
     /**
      * @param {express.Application} express - Reference to the express Application Instance.
@@ -18,28 +59,123 @@ class Server {
     public express: express.Application;
 
     /**
-     * @param {object} config - Reference to the dotEnv object
+     * @param {object} dotEnv - Reference to the dotEnv object.
      */
-    public config: object;
+    public dotEnv: object;
 
     /**
-     * @param {Connection} dbConnection - Reference to the typeOrm connection
+     * @param {Environment|object} tplEngine - The template Engine.
+     */
+    public tplEngine: Environment|object;
+
+    /**
+     * @param {number} port - The Server Port.
+     */
+    public port: number;
+
+    /**
+     * @param {Connection} dbConnection - Reference to the typeOrm connection.
      */
     protected dbConnection: Connection;
 
+    // ----------------------------------------------------------------------
+    // Public Methods
+    // ----------------------------------------------------------------------
+
     /**
      * Run configuration methods on the Express instance.
-     * @returns {void}
+     * @returns {this}
      */
     constructor() {
+        this.express = express();
         this.initConfig();
+        this.middleware();
         this.initDatabase();
-        this.express = createExpressServer({
-            controllers: [__dirname + "/controllers/*{.ts,.js}"],
+        this.initTemplateEngine();
+        this.routes();
+        useExpressServer(this.express , {
+            controllers: [Config.serverPath + "/controllers/*{.ts,.js}"],
             routePrefix: "/api/v1",
         });
-        this.middleware();
-        this.routes();
+        logger.debug("Controllers loaded from: " + Config.serverPath + "/controllers/*{.ts,.js}");
+        return this;
+    }
+
+    /**
+     * Public method the initiates the (express) Server.
+     *
+     * @param {void} port - The Server port to listen on. Defaults to 3000.
+     */
+    public run(port?: number) {
+        const server = this.createServer();
+        server.on("error", this.onError);
+        server.on("listening", this.onListening);
+        return server;
+    }
+
+    // ----------------------------------------------------------------------
+    // Private Methods
+    // ----------------------------------------------------------------------
+
+    /**
+     * Private method to handle the creation of http(s) server.
+     *
+     * @param port - The Server Port to listen on.
+     * @returns {https.Server | http.Server}
+     */
+    private createServer() {
+        const certPath: any = sslCertExists(true);
+        const keyPath: any = sslKeyExists(true);
+        let server;
+        if (isProduction() && certPath && keyPath) {
+            const sslOptions = {
+                key: fs.readFileSync(keyPath),
+                cert: fs.readFileSync(certPath),
+            };
+
+            server = Server.server = https.createServer(sslOptions, this.express)
+                                          .listen(Config.httpsPort);
+        } else {
+            const normalizedPort = this.port = Server.normalizePort(Config.httpPort);
+            server = Server.server = this.express.listen(normalizedPort);
+            debug("express:server");
+        }
+
+        return server;
+    }
+
+    /**
+     * Private method to handle server errors.
+     *
+     * @param {NodeJS.ErrnoException} error - The error object.
+     */
+    private onError(error: NodeJS.ErrnoException): void {
+        if (error.syscall !== "listen") {
+            throw error;
+        }
+        const port = this.port;
+        const bind = (typeof port === "string") ? "Pipe " + port : "Port " + port;
+        switch (error.code) {
+            case "EACCES":
+                logger.info(`${bind} requires elevated privileges`);
+                process.exit(1);
+                break;
+            case "EADDRINUSE":
+                logger.error(`${bind} is already in use`);
+                process.exit(1);
+                break;
+            default:
+                throw error;
+        }
+    }
+
+    /**
+     * Private method to handle server Listening.
+     */
+    private onListening(): void {
+        const address = Server.server.address();
+        const bind = (typeof address === "string") ? `pipe ${address}` : `port ${address.port}`;
+        logger.info(`Listening on ${bind}`);
     }
 
     /**
@@ -47,9 +183,14 @@ class Server {
      * @returns {void}
      */
     private middleware(): void {
-        this.express.use(logger("dev"));
+        logger.info("Initializing Server middlewares...");
+
+        this.express.use(helmet());
+        this.express.use(helmet.hidePoweredBy({ setTo: "TypeWrite" }));
         this.express.use(bodyParser.json());
         this.express.use(bodyParser.urlencoded({extended: false}));
+        this.express.use(compression());
+        this.express.disable("x-powered-by");
     }
 
     /**
@@ -57,6 +198,8 @@ class Server {
      * @returns {void}
      */
     private routes(): void {
+        logger.info("Initializing Server routes...");
+
         /* This is just to get up and running, and to make sure what we've got is
          * working so far. This function will change when we start to add more
          * API endpoints */
@@ -75,11 +218,26 @@ class Server {
      * @returns {void}
      */
     private initConfig(): void {
-        const env = process.env.NODE_ENV;
-        const dotFile = env !== null || env !== "" || env !== undefined ? ".env" : "." + env + ".env";
-        this.config = require("dotenv").config({
-            path: dotFile,
+        logger.info("Initializing Server configurations...");
+        this.dotEnv = Config.dotEnv;
+
+        logger.log("debug", "Configuration load: ", Config);
+    }
+
+    /**
+     * Initialize the Template Engine.
+     */
+    private initTemplateEngine(): void {
+        logger.info("Initializing Templating engine...");
+
+        const templatePath = Config.templatePath;
+        this.tplEngine = nunjucks.configure(templatePath, {
+            autoescape: true,
+            express: this.express,
         });
+        this.express.set("tplEngine", this.tplEngine);
+
+        logger.debug("Initialized Templates from " + inspect(templatePath, false, null));
     }
 
     /**
@@ -87,74 +245,18 @@ class Server {
      * @returns {void}
      */
     private initDatabase(): void {
+        logger.info("Initializing Database connection...");
+
         const self = this;
-        const sync: boolean = process.env.TYPEORM_SYNCHRONIZE as any || false;
-        const entityFiles = this.parseDotEnvJSON(process.env.TYPEORM_ENTITIES) || [__dirname + "/models/*"];
-        const subscriberFiles = this.parseDotEnvJSON(process.env.TYPEORM_SUBSCRIBERS) || [__dirname + "/subscribers/*"];
-        const migrationFiles = this.parseDotEnvJSON(process.env.TYPEORM_MIGRATIONS) || [__dirname + "/migrations/*"];
-
-        const typeOrmConf = {
-            type: process.env.DB_TYPE,
-            host: process.env.DB_HOST,
-            port: process.env.DB_PORT,
-            database: process.env.DB_DATABASE,
-            username: process.env.DB_USERNAME,
-            password: process.env.DB_PASSWORD,
-            synchronize: sync,
-            logging: process.env.TYPEORM_LOGGING || false,
-            entities: entityFiles,
-            migrations: migrationFiles,
-            subscribers: subscriberFiles,
-        } as any;
-
+        const typeOrmConf = Config.typeOrm as any;
         const connection = createConnection(typeOrmConf);
+
         connection.then((dbConnection) => {
             self.dbConnection = dbConnection;
-            console.debug(chalk.green("Database connection established"));
+            self.express.set("db", self.dbConnection);
+            logger.info("Database connection established");
         }).catch((error) => {
-            console.log(chalk.red(error));
+            logger.error(error.code + ": " + error.message);
         });
-    }
-
-    /**
-     * Parse dotEnv config values that may contain array of (multiple) values or JSON.
-     *
-     * @param {string} param
-     * @returns {string[]}
-     */
-    private parseDotEnvJSON(param?: string): string[] {
-        try {
-            return JSON.parse(param);
-        } catch (e) {
-            if (param === null || param === "" || param === undefined) {
-                return [];
-            }
-            if (param.indexOf(",") > -1) {
-                return this.getAbsolutePaths(param.split(","));
-            } else {
-                return this.getAbsolutePaths([param as string]);
-            }
-        }
-    }
-
-    /**
-     * Convert relative path to absolute paths.
-     *
-     * @param {string[]} relativePaths
-     * @returns {string[]}
-     */
-    private getAbsolutePaths(relativePaths: string[]): string[] {
-        if (!(relativePaths instanceof Array)) {
-            relativePaths = [relativePaths];
-        }
-        relativePaths.forEach((value, key) => {
-            if (value.indexOf("/") !== 0) {
-                value = "/" + value;
-            }
-            relativePaths[key] = __dirname + value;
-        });
-        return relativePaths;
     }
 }
-
-export default new Server().express;

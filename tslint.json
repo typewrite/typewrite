@@ -7,7 +7,12 @@
     "rules": {
         "object-literal-sort-keys": false,
         "no-console": false,
-        "one-variable-per-declaration": false
+        "one-variable-per-declaration": false,
+        "ordered-imports": false,
+        "interface-name": false,
+        "no-var-requires": {
+            "severity": "warn"
+        }
     },
     "rulesDirectory": []
 }

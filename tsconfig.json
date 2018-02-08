@@ -27,10 +27,12 @@
    "include": [
         "src/index.ts",
         "src/server/**/*",
-        "src/client/**/*"
+        "src/client/**/*",
+        "src/config/*"
    ],
    "exclude": [
        "node_modules",
-       "tests"
+       "tests",
+       "dist/.gitignore"
    ]
 }

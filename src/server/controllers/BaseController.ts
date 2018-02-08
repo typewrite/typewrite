@@ -1,6 +1,7 @@
 import * as express from "express";
 // import { Req, Res } from 'routing-controllers';
 import {BaseEntity, Connection, getConnection} from "typeorm";
+// import logger from "../utils/logger";
 
 /**
  * Base Controller class to contain common methods/properties accessible
@@ -8,6 +9,8 @@ import {BaseEntity, Connection, getConnection} from "typeorm";
  */
 export class BaseController {
 
+    /** @param {e.Request} appRequest */
+    public appRequest: express.Request;
     /** @param {e.Response} appResponse */
     public appResponse: express.Response;
     /** @param {string} successText - (common) Text to be used for success status message */
@@ -25,6 +28,10 @@ export class BaseController {
     /** @param {object} pagination - The property holds pagination info to be consumed by the successHandler. */
     protected pagination: any | object;
 
+    // ----------------------------------------------------------------------
+    // Public Methods
+    // ----------------------------------------------------------------------
+
     /**
      * Common method to handle retrieving of all Entities.
      *
@@ -36,9 +43,13 @@ export class BaseController {
     public async getAll(req: express.Request, res: express.Response, queryParams?: any) {
         const self = this;
 
-        const limit = queryParams !== undefined && queryParams.hasOwnProperty("limit") ? queryParams.limit : 100;
-        const count = queryParams !== undefined &&
+        let limit = queryParams !== undefined && queryParams.hasOwnProperty("limit") ? queryParams.limit : 100;
+        let count = queryParams !== undefined &&
             queryParams.hasOwnProperty("count") ? queryParams.count : await this.modelObj.count();
+
+        limit = parseInt(limit, 10);
+        count = parseInt(count, 10);
+
         const totalPages = limit > count ? 1 : (count / limit);
         const currentPage = queryParams !== undefined && queryParams.hasOwnProperty("page") ? queryParams.page : 1;
         const nextPage = currentPage === totalPages ? currentPage : (currentPage + 1);
@@ -61,7 +72,7 @@ export class BaseController {
 
         const skip = (currentPage - 1) * limit;
 
-        this.setUp(res);
+        this.setUp(req, res);
         return this.modelObj.find({ skip, take: limit })
             .then(self.handleSuccess.bind(self))
             .catch(self.handleError.bind(self));
@@ -71,11 +82,12 @@ export class BaseController {
      * Common method to handle retrieving of a single Entity by Id.
      *
      * @param {number | string} id - The Entity Id.
+     * @param {e.Request} req - Express request object.
      * @param {e.Response} res - Express response object.
      * @returns {Promise<e.Response | T>} - Returns an express Response object with JSON data.
      */
-    public getOne(id: string|number, res: express.Response) {
-        this.setUp(res);
+    public getOne(id: string|number, req: express.Request, res: express.Response) {
+        this.setUp(req, res);
         return this.modelObj.findOne({id})
             .then(this.handleSuccess.bind(this))
             .catch(this.handleError.bind(this));
@@ -85,11 +97,12 @@ export class BaseController {
      * Common method to handle creation/addition of single entity.
      *
      * @param {number | string} params - Entity object with appropriate key, value pairs.
+     * @param {e.Request} req - The express request object.
      * @param {e.Response} res - Express response object.
      * @returns {Promise<e.Response | T>} - Returns an express Response object with JSON data.
      */
-    public addEntity(params: object|any, res: express.Response) {
-        this.setUp(res);
+    public addEntity(params: object|any, req: express.Request, res: express.Response) {
+        this.setUp(req, res);
         this.sanitize(params);
         const entityRepo = this.db.getRepository(this.modelName);
         return entityRepo.save(params)
@@ -102,11 +115,14 @@ export class BaseController {
      *
      * @param {number | string} id - Entity Id.
      * @param {object} updatedEntity - Entity object with updated values
+     * @param {e.Request} req - The express request object.
      * @param {e.Response} res - Express response object.
      * @returns {Promise<e.Response | T>} - Returns an express Response object with JSON data.
      */
-    public updateEntity(id: number|string, updatedEntity: object|any, res: express.Response) {
-        this.setUp(res);
+    public updateEntity(id: number|string, updatedEntity: object|any,
+                        req: express.Request, res: express.Response) {
+
+        this.setUp(req, res);
         this.sanitize(updatedEntity);
         return this.modelObj.findOne({id})
             .then((entity) => {
@@ -121,11 +137,12 @@ export class BaseController {
      * Common method to handle entity deletion.
      *
      * @param {string | number} id - Entity Id.
+     * @param {e.Request} req - The express request object.
      * @param {e.Response} res - Express Response object.
      * @returns {Promise<e.Response | T>} - Returns an express Response object with JSON data.
      */
-    public deleteEntity(id: number|string, res: express.Response) {
-        this.setUp(res);
+    public deleteEntity(id: number|string, req: express.Request, res: express.Response) {
+        this.setUp(req, res);
         return this.modelObj.findOne({id})
             .then((entity) => {
                 return entity.remove()
@@ -140,11 +157,12 @@ export class BaseController {
      * to perform this action.
      *
      * @param {number | string} id - The entity Id.
+     * @param {e.Request} req - The express request object.
      * @param {e.Response} res - The express response object.
      * @returns {Promise<e.Response | T>} - Returns the express Response Object.
      */
-    public softDeleteEntity(id: number|string, res: express.Response) {
-        this.setUp(res);
+    public softDeleteEntity(id: number|string, req: express.Request, res: express.Response) {
+        this.setUp(req, res);
         return this.modelObj.findOne({id})
             .then((entity) => {
                 entity.status = entity.statusDeleted || "Deleted";
@@ -155,6 +173,10 @@ export class BaseController {
             .catch(this.handleError);
     }
 
+    // ----------------------------------------------------------------------
+    // Protected Methods
+    // ----------------------------------------------------------------------
+
     /**
      * Sanitizes the (db) Response with the Entity's static 'exclude' property, which should
      * contain an array of the Entity's properties to exclude.
@@ -163,7 +185,7 @@ export class BaseController {
      *
      */
     protected sanitize(response): void {
-        const filter = this.getExcluded();
+        const filter = this.getExcluded(this.appRequest.method.toLocaleLowerCase());
         if (filter !== undefined) {
             if (response instanceof Array) {
                 response.forEach((value, index) => {
@@ -197,8 +219,7 @@ export class BaseController {
      * @returns {express.Response} - Returns the express response object.
      */
     protected handleError(response) {
-        this.appResponse.status(400);
-        return this.appResponse.json({
+        return this.appResponse.status(400).json({
             error: {
                 code: response.code,
                 message: response.message,
@@ -223,16 +244,21 @@ export class BaseController {
         obj[modelName] = response;
         this.addPagination(obj);
         const json = this.successJson(obj);
-        this.appResponse.status(200);
-        return this.appResponse.json(json);
+        return this.appResponse.status(200).json(json);
     }
+
+    // ----------------------------------------------------------------------
+    // Private Methods
+    // ----------------------------------------------------------------------
 
     /**
      * Assign express Response object from current context.
      *
+     * @param {e.Request} req - The express request object.
      * @param {express.Response} res - The express response object.
      */
-    private setUp(res: express.Response): void {
+    private setUp(req: express.Request, res: express.Response): void {
+        this.appRequest = req;
         this.appResponse = res;
     }
 

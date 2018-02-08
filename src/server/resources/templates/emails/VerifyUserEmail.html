@@ -1,0 +1,13 @@
+{% extends common/layout.html %}
+<table>
+    <tr>
+        <td>
+            <p>
+                Hi {{ user.name }},
+
+                Please confirm your email account to activate {{ brand.name }} by clicking the below link -
+                {{ confirmationLink }}
+            </p>
+        </td>
+    </tr>
+</table>

@@ -29,5 +29,16 @@ program.command('key:generate')
             console.log(chalk.red(err));
         });
     });
+
+program.command('install')
+    .alias('i')
+    .description('Install Typewrite, dependencies et al.')
+    .action(() => {
+        // Install all dependencies.
+
+        // Check Database Installation and Setup the same with tables and db.
+
+        // Check ssl install and availability of Keys. (esp. in prod)
+    })
     
 program.parse(process.argv);

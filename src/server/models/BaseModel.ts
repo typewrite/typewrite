@@ -1,9 +1,8 @@
 import * as crypto from "crypto";
 import * as jwt from "jsonwebtoken";
 import * as moment from "moment";
-import * as os from "os";
 import {BaseEntity} from "typeorm";
-import * as uuid from "uuid/v5";
+import * as uuid from "uuid/v4";
 
 /**
  * @abstract BaseModel - The base model class to be inherited by all models.
@@ -29,7 +28,7 @@ export class BaseModel extends BaseEntity {
     }
 
     protected generateUUID(namespace?: string) {
-        return uuid(namespace || os.hostname(), uuid.DNS);
+        return uuid();
     }
 
     protected generateShortId(UUID: string) {

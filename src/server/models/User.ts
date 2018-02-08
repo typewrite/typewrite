@@ -13,13 +13,13 @@ export class User extends BaseModel {
     public static statusSuspended = "Suspended";
     public static statusDeleted = "Deleted";
     public static excludeByHttpMethod: object = {
-        get: ["emailVerifyToken", "password", "salt", "passwordResetToken"],
-        post: ["emailVerifyToken", "salt", "passwordResetToken"],
-        put: ["emailVerifyToken", "password", "salt", "passwordResetToken"],
+        get: ["uuid", "emailVerifyToken", "password", "salt", "passwordResetToken"],
+        post: ["id", "uuid", "emailVerifyToken", "salt", "passwordResetToken"],
+        put: ["id", "uuid", "emailVerifyToken", "password", "salt", "passwordResetToken"],
     };
 
     /**
-     * @property {number} id - Auto generated Table Id.
+     * @property {string} id - Auto generated Table Id.
      */
     @typeOrm.PrimaryColumn()
     public id: string;
@@ -27,7 +27,7 @@ export class User extends BaseModel {
     /**
      * @protected {string} uuid - UUID
      */
-    @typeOrm.Column({ unique: true })
+    @typeOrm.Column()
     public uuid: string;
 
     /**

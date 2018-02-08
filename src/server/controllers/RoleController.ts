@@ -31,24 +31,26 @@ export class RoleController extends BaseController {
      * Gets Role by Id.
      *
      * @param {number} id - The role Id.
+     * @param {e.Request} req - The express request object.
      * @param {e.Response} res - The express response object.
      * @returns {Promise<Response | T>} - Return the express response object containing the json.
      */
     @Get("/role/:id")
-    public getOneRole(@Param("id") id: number, @Res() res: express.Response) {
-        return this.getOne(id, res);
+    public getOneRole(@Param("id") id: number, @Req() req: express.Request, @Res() res: express.Response) {
+        return this.getOne(id, req, res);
     }
 
     /**
      * Add a new role.
      *
      * @param {Role} params - The parameters required to create a new Role.
+     * @param {e.Request} req - The express request object.
      * @param {e.Response} res - The express response object.
      * @returns {Promise<Response | T>} - Return the express response object containing the json.
      */
     @Post("/role")
-    public addRole(@Body() params: Role, @Res() res: express.Response) {
-        return this.addEntity(params, res);
+    public addRole(@Body() params: Role, @Req() req: express.Request, @Res() res: express.Response) {
+        return this.addEntity(params, req, res);
     }
 
     /**
@@ -56,23 +58,26 @@ export class RoleController extends BaseController {
      *
      * @param {number} id - The Role Id.
      * @param {Role} updatedRole - The parameters of the role, that need to be updated.
+     * @param {e.Request} req - The express request object.
      * @param {e.Response} res - The express response object.
      * @returns {Promise<Response | T>} - Return the express response object containing the json.
      */
     @Put("/role/:id")
-    public updateRole(@Param("id") id: number, @Body() updatedRole: Role, @Res() res: express.Response) {
-        return this.updateEntity(id, updatedRole, res);
+    public updateRole(@Param("id") id: number, @Body() updatedRole: Role,
+                      @Req() req: express.Request, @Res() res: express.Response) {
+        return this.updateEntity(id, updatedRole, req, res);
     }
 
     /**
      * Delete role by Id.
      *
      * @param {string} id - The Role Id.
+     * @param {e.Request} req - The express request object.
      * @param {e.Response} res - The express response object.
      * @returns {Promise<Response | T>} - Return the express response object containing the json.
      */
     @Delete("/role/:id")
-    public deleteRole(@Param("id") id: string, @Res() res: express.Response) {
-        return this.deleteEntity(id, res);
+    public deleteRole(@Param("id") id: string, @Req() req: express.Request, @Res() res: express.Response) {
+        return this.deleteEntity(id, req, res);
     }
 }

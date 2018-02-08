@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <title>{{ title }}</title>
+    </head>
+    <body>
+        <table style="max-width: 800px; width: 100%">
+            <tr>
+                <td>
+                    {% include common/header.html %}
+                </td>
+            </tr>
+        </table>
+        <table style="max-width: 800px; width: 100%">
+            <tr>
+                <td>
+                    {% block content %}
+                    {% endblock %}
+                </td>
+            </tr>
+        </table>
+        <table style="max-width: 800px; width: 100%">
+            <tr>
+                <td>
+                    {% include common/footer.html %}
+                </td>
+            </tr>
+        </table>
+    </body>
+</html>
