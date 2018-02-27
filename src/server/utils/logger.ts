@@ -1,39 +1,57 @@
 import * as winstonLogger from "winston";
 import * as rotatedLog from "winston-daily-rotate-file";
-import Config from "../../config/Config";
+import { ConfigPromise } from "../utils/Config";
+import { boolVal } from "../utils/commonMethods";
 
 const winston = require("winston");
 
-winstonLogger.configure({
-    level: "debug",
-    handleExceptions: true,
-    transports: [
-        new winstonLogger.transports.Console({
-            format: winston.format.combine(
-                winston.format.colorize(),
-                winston.format.timestamp(),
-                winston.format.align(),
-                winston.format.printf((info) => {
-                    const {
-                        timestamp, level, message, ...args,
-                    } = info;
+ConfigPromise.then((Config) => {
 
-                    const ts = timestamp.slice(0, 19).replace("T", " ");
+    let logLevel = "info";
+    const debug = boolVal(Config.get("debug"));
 
-                    return `${ts} [${level}]: ${message} ${Object.keys(args).length ?
-                            JSON.stringify(args, null, 2) : ""}`;
-                }),
-            ),
-        }),
-        new rotatedLog({
-            filename: Config.logPath,
-            datePattern: "DD-MM-YYYY",
-            prepend: false,
-            level: "error",
-            json: false,
-            prettyPrint: true,
-        }),
-    ],
+    if (Config.get("env") === "test") {
+        logLevel = "none";
+        if (debug) {
+            logLevel = "debug";
+        }
+    } else if (Config.get("env") === "development") {
+        logLevel = debug ? "debug" : logLevel;
+    }
+
+    winstonLogger.configure({
+        level: "debug",
+        handleExceptions: true,
+        transports: [
+            new winstonLogger.transports.Console({
+                format: winston.format.combine(
+                    winston.format.colorize(),
+                    winston.format.timestamp(),
+                    winston.format.align(),
+                    winston.format.printf((info) => {
+                        const {
+                            timestamp, level, message, ...args,
+                        } = info;
+
+                        const ts = timestamp.slice(0, 19).replace("T", " ");
+
+                        return `${ts} [${level}]: ${message} ${Object.keys(args).length ?
+                                JSON.stringify(args, null, 2) : ""}`;
+                    }),
+                ),
+                level: logLevel,
+                silent: Config.get("env") === "test",
+            }),
+            new rotatedLog({
+                filename: Config.get("logPath") + "/error",
+                datePattern: "DD-MM-YYYY",
+                prepend: false,
+                level: "error",
+                json: false,
+                prettyPrint: true,
+            }),
+        ],
+    });
 });
 
 export default winstonLogger;

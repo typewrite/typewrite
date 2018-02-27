@@ -1,5 +1,15 @@
 import * as typeOrm from "typeorm";
 import { BaseModel } from "./BaseModel";
+// import { User } from "./User";
+
+export enum Permissions {
+    Publish = "publish",
+    Edit = "edit",
+    Write = "write",
+    AddUser = "add-user",
+    View = "view",
+    Comment = "comment",
+}
 
 /**
  * @class Role - The Roles that can be assigned to users
@@ -32,6 +42,9 @@ export class Role extends BaseModel {
      */
     @typeOrm.Column("varchar", { isArray: true, length: 20 })
     public permissions: string[];
+
+    // @typeOrm.OneToMany((type) => User, (user) => user.role)
+    // public user: User[];
 
     /**
      * @property {Date} updatedAt - The last update date & time.

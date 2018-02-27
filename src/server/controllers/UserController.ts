@@ -1,12 +1,12 @@
 import * as express from "express";
-import {Body, Delete, Get, JsonController, Param, Post, Put, QueryParams, Req, Res} from "routing-controllers";
+import * as rc from "routing-controllers";
 import { User } from "../models/User";
 import { BaseController } from "./BaseController";
 
 /**
  * User Controller.
  */
-@JsonController()
+@rc.JsonController()
 export class UserController extends BaseController {
 
     /** @inheritDoc */
@@ -17,14 +17,18 @@ export class UserController extends BaseController {
     /**
      * Get all Users.
      *
-     * @param {e.Request} req - The express request object.
-     * @param {e.Response} res - The express response object.
+     * @param {express.Request} req - The express request object.
+     * @param {express.Response} res - The express response object.
      * @param {any} params - The query parameters.
-     * @returns {Promise<Response | T>} - An express Response object with the JSON response,
+     * @returns {Promise<express.Response>} - An express Response object with the JSON response,
      *                                    wrapped in a Promise.
      */
-    @Get("/users")
-    public getAllUsers(@Req() req: express.Request, @Res() res: express.Response, @QueryParams() params: any) {
+    @rc.Get("/users")
+    public getAllUsers(@rc.Req() req: express.Request,
+                       @rc.Res() res: express.Response,
+                       @rc.QueryParams() params: any)
+                       : Promise<express.Response> {
+
         return this.getAll(req, res, params);
     }
 
@@ -32,13 +36,17 @@ export class UserController extends BaseController {
      * Get User by Id.
      *
      * @param {string} userId - The User Id.
-     * @param {e.Request} req - The express request object.
-     * @param {e.Response} res - The express response object.
-     * @returns {Promise<Response | T>} - An express Response object with the JSON response,
+     * @param {express.Request} req - The express request object.
+     * @param {express.Response} res - The express response object.
+     * @returns {Promise<express.Response>} - An express Response object with the JSON response,
      *                                    wrapped in a Promise.
      */
-    @Get("/user/:userId")
-    public getOneUser(@Param("userId") userId: string, @Req() req: express.Request, @Res() res: express.Response) {
+    @rc.Get("/user/:userId")
+    public getOneUser(@rc.Param("userId") userId: string,
+                      @rc.Req() req: express.Request,
+                      @rc.Res() res: express.Response)
+                      : Promise<express.Response> {
+
         return this.getOne(userId, req, res);
     }
 
@@ -46,13 +54,17 @@ export class UserController extends BaseController {
      * Create new User.
      *
      * @param {User} params - The User properties required to create a new User.
-     * @param {e.Request} req - The express request object.
-     * @param {e.Response} res - The express response object.
-     * @returns {Promise<Response | T>} - An express Response object with the JSON response,
+     * @param {express.Request} req - The express request object.
+     * @param {express.Response} res - The express response object.
+     * @returns {Promise<express.Response>} - An express Response object with the JSON response,
      *                                    wrapped in a Promise.
      */
-    @Post("/user")
-    public addUser(@Body() params: User, @Req() req: express.Request, @Res() res: express.Response) {
+    @rc.Post("/user")
+    public addUser(@rc.Body() params: User,
+                   @rc.Req() req: express.Request,
+                   @rc.Res() res: express.Response)
+                   : Promise<express.Response> {
+
         return this.addEntity(params, req, res);
     }
 
@@ -61,14 +73,17 @@ export class UserController extends BaseController {
      *
      * @param {string} id - The User Id.
      * @param {JSON} updatedUser - Updated User Object.
-     * @param {e.Request} req - The express request object.
-     * @param {e.Response} res - The express response object.
-     * @returns {Promise<Response | T>} - An express Response object with the JSON response,
+     * @param {express.Request} req - The express request object.
+     * @param {express.Response} res - The express response object.
+     * @returns {Promise<express.Response>} - An express Response object with the JSON response,
      *                                    wrapped in a Promise.
      */
-    @Put("/user/:id")
-    public updateUser(@Param("id") id: string, @Body() updatedUser: JSON,
-                      @Req() req: express.Request, @Res() res: express.Response) {
+    @rc.Put("/user/:id")
+    public updateUser(@rc.Param("id") id: string,
+                      @rc.Body() updatedUser: JSON,
+                      @rc.Req() req: express.Request,
+                      @rc.Res() res: express.Response)
+                      : Promise<express.Response> {
 
         return this.updateEntity(id, updatedUser, req, res);
     }
@@ -77,13 +92,27 @@ export class UserController extends BaseController {
      * Delete User by Id.
      *
      * @param {string} id - The User Id.
-     * @param {e.Request} req - The express request object.
-     * @param {e.Response} res - The express response object.
-     * @returns {Promise<Response | T>} - An express Response object with the JSON response,
+     * @param {express.Request} req - The express request object.
+     * @param {express.Response} res - The express response object.
+     * @returns {Promise<express.Response>} - An express Response object with the JSON response,
      *                                    wrapped in a Promise.
      */
-    @Delete("/user/:id")
-    public deleteUser(@Param("id") id: string, @Req() req: express.Request, @Res() res: express.Response) {
+    @rc.Delete("/user/:id")
+    public deleteUser(@rc.Param("id") id: string,
+                      @rc.Req() req: express.Request,
+                      @rc.Res() res: express.Response)
+                      : Promise<express.Response> {
+
         return this.softDeleteEntity(id, req, res);
+    }
+
+    @rc.Authorized()
+    @rc.Delete("/user/hard-delete/:id")
+    public hardDeleteUser(@rc.Param("id") id: string,
+                          @rc.Req() req: express.Request,
+                          @rc.Res() res: express.Response)
+                          : Promise<express.Response> {
+
+        return this.deleteEntity(id, req, res);
     }
 }

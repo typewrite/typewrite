@@ -1,5 +1,6 @@
 import * as bcryptjs from "bcryptjs";
 import * as typeOrm from "typeorm";
+import * as validator from "class-validator";
 import { BaseModel } from "./BaseModel";
 import { Role } from "./Role";
 
@@ -12,10 +13,16 @@ export class User extends BaseModel {
     public static statusActive = "Active";
     public static statusSuspended = "Suspended";
     public static statusDeleted = "Deleted";
-    public static excludeByHttpMethod: object = {
-        get: ["uuid", "emailVerifyToken", "password", "salt", "passwordResetToken"],
-        post: ["id", "uuid", "emailVerifyToken", "salt", "passwordResetToken"],
-        put: ["id", "uuid", "emailVerifyToken", "password", "salt", "passwordResetToken"],
+
+    public static exclude = {
+        incoming: {
+            default: ["id", "uuid", "emailVerifyToken", "password", "salt",
+            "passwordResetToken", "role"],
+            post: ["id", "uuid", "emailVerifyToken", "salt", "passwordResetToken"],
+        },
+        outgoing: {
+            default: ["uuid", "password", "salt", "passwordResetToken", "emailVerifyToken"],
+        },
     };
 
     /**
@@ -33,30 +40,41 @@ export class User extends BaseModel {
     /**
      * @property {string} firstName - User First name.
      */
+    @validator.IsString()
+    @validator.MinLength(2)
+    @validator.MaxLength(100)
     @typeOrm.Column({ length: 100 })
     public firstName: string;
 
     /**
      * @property {string} lastName - User Last name.
      */
+    @validator.IsString()
+    @validator.MinLength(2)
+    @validator.MaxLength(100)
     @typeOrm.Column({ length: 100 })
     public lastName: string;
 
     /**
      * @property {string} userName - Username.
      */
-    @typeOrm.Column()
+    @validator.IsString()
+    @validator.MinLength(4)
+    @validator.MaxLength(20)
+    @typeOrm.Column({ length: 20 })
     public userName: string;
 
     /**
      * @property {string} email - User email address.
      */
+    // @validator.IsEmail()
     @typeOrm.Column({ unique: true })
     public email: string;
 
     /**
      * @property {Role} role - The role user belongs to.
      */
+    // @typeOrm.ManyToOne((type) => Role, (role) => role.user)
     @typeOrm.ManyToOne((type) => Role)
     public role: Role;
 
@@ -75,6 +93,8 @@ export class User extends BaseModel {
     /**
      * @property {string} password - User hashed password
      */
+    @validator.MinLength(6)
+    @validator.IsString()
     @typeOrm.Column()
     public password: string;
 

@@ -1,40 +1,25 @@
 import * as nodeMailer from "nodemailer";
-import {EntitySubscriberInterface, InsertEvent} from "typeorm";
+import {EntitySubscriberInterface, InsertEvent, EventSubscriber} from "typeorm";
 import * as logger from "winston";
 import {User} from "../models/User";
-import App from "../Server";
+import Server from "../Server";
+import * as nunjucks from "nunjucks";
+import { ConfigPromise } from "../utils/Config";
 
-let mailerConfig = {};
-const isMailSecure = process.env.SMTP_PORT === "465";
-if (process.env.SMTP_TYPE === "sendmail") {
-    mailerConfig = {
-        sendmail: true,
-        newline: "unix",
-    };
-} else {
-    mailerConfig = {
-        host: process.env.SMTP_HOST || "localhost",
-        port: process.env.SMTP_PORT || 587,
-        secure: process.env.SMTP_SECURE || isMailSecure,
-        auth: {
-            user: process.env.SMTP_USER,
-            pass: process.env.SMTP_PASS,
-        },
-    };
-}
-
-export class NewUserSubscriber implements EntitySubscriberInterface<User> {
+@EventSubscriber()
+export class NewUserSubscriber implements EntitySubscriberInterface <User> {
 
     public listenTo() {
         return User;
     }
 
-    public afterInsert(event: InsertEvent<User>): void {
+    public async afterInsert(event: InsertEvent<User>) {
         logger.info("New User Subscriber Initiated.");
-
-        const mailer = nodeMailer.createTransport(mailerConfig);
-        const tplEngine = App.server.tplEngine;
-        const serverAddress = App.server.address().address;
+        const config = await ConfigPromise;
+        logger.log("debug", "SMTP Config used: ", config.get("smtp"));
+        const mailer = nodeMailer.createTransport(config.get("smtp") as any);
+        const tplEngine = nunjucks;
+        const serverAddress = Server.server.address().address;
         const user = event.entity;
         const tplData = {
             user: {
@@ -50,7 +35,7 @@ export class NewUserSubscriber implements EntitySubscriberInterface<User> {
         const emailHtml = tplEngine.render("emails/VerifyUserEmail.html", tplData);
 
         mailer.sendMail({
-            from: "typewrite@typewrite.in",
+            from: "juz.cool1@gmail.com",
             to: user.email,
             subject: "Please Verify your Email",
             html: emailHtml,

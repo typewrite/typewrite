@@ -1,0 +1,22 @@
+{
+    "debug": false,
+    "httpPort": 3005,
+    "typeOrm": {
+        "type": "{{ env('DB_TYPE') }}",
+        "host": "{{ env('DB_HOST') }}",
+        "port": "{{ env('DB_PORT') }}",
+        "database": "test",
+        "username": "test",
+        "password": "test",
+        "entities": ["{{ serverPath('/models/*') }}"],
+        "subscribers": ["{{ serverPath('/subscribers/*') }}"],
+        "migrations": ["{{ serverPath('/migrations/*') }}"],
+        "logging": false,
+        "synchronize": true
+    },
+    "smtp": {
+        "sendmail": true,
+        "newline": "unix",
+        "direct": true
+    }
+}

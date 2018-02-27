@@ -1,16 +1,16 @@
-process.env.NODE_ENV = 'test';
-
-//import * as mocha from 'mocha';
-import * as chai from 'chai';
-import chaiHttp = require('chai-http');
-import app from '../src/server/Server';
+import * as chai from "chai";
+import * as fs from "fs";
+import { basePath } from "../src/server/utils/commonMethods";
 
 const expect = chai.expect;
 
-describe('Server Tests', () => {
+describe("Server Tests", () => {
 
-    it('should have loaded test dotenv file', () => {
-        expect(process.env.APP_ENV_TEST, "this is a test");
-    })
+    it("should have loaded test dotenv file", (done) => {
+        if (fs.existsSync(basePath(".test.env"))) {
+            expect(process.env.APP_ENV_TEST, "this is a test environment file");
+        }
+        done();
+    });
 
-})
+});

@@ -1,0 +1,7 @@
+{
+    "smtp": {
+        "sendmail": true,
+        "newline": "unix",
+        "direct": true
+    }
+}

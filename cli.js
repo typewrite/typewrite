@@ -1,14 +1,25 @@
 #!/usr/bin/env node
-const program = require('commander');
-const { prompt } = require('inquirer');
-const bcrypt = require('bcryptjs');
-const fileReplace = require('replace-in-file');
-const chalk = require('chalk');
-const path = require('path');
+const { exec } = require('child_process');
+var program = require('commander');
+var { prompt } = require('inquirer');
+var bcrypt = require('bcryptjs');
+var fileReplace = require('replace-in-file');
+var chalk = require('chalk');
+var path = require('path');
+var shell = require('shelljs');
+var debug = require('debug');
+const defaultHandler = (err, stdout, stderr) => {
+    if (err) {
+        console.log(`FATAL: ${err}`);
+        return;
+    }
+    console.log(chalk.red(`stdout: ${stdout}`));
+    console.log(chalk.green(`stderr: ${stderr}`));
+}
 
 program.version('v1.0.0')
-    .name('nb')
-    .description('Node Blogger App Command Line Tools');
+    .name('typewrite')
+    .description('TypeWrite Command Line Tools');
 
 program.command('key:generate')
     .alias('keygen')
@@ -32,13 +43,14 @@ program.command('key:generate')
 
 program.command('install')
     .alias('i')
-    .description('Install Typewrite, dependencies et al.')
+    .description('Install TypeWrite, dependencies et al.')
     .action(() => {
         // Install all dependencies.
 
         // Check Database Installation and Setup the same with tables and db.
 
         // Check ssl install and availability of Keys. (esp. in prod)
-    })
+    });
+
     
 program.parse(process.argv);

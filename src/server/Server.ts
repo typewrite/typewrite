@@ -4,21 +4,27 @@ import * as compression from "compression";
 import * as express from "express";
 import * as fs from "fs";
 import * as https from "https";
+import * as http from "http";
 import * as debug from "debug";
 import * as nunjucks from "nunjucks";
 import * as helmet from "helmet";
+import * as jwt from "jsonwebtoken";
 
-import logger from "../server/utils/logger";
-import Config from "../config/Config";
-
-import { inspect } from "util";
+import { Config } from "../server/utils/Config";
+import { inspect, isObject } from "util";
 import { Environment } from "nunjucks";
-import { useExpressServer } from "routing-controllers";
+import { useExpressServer, Action } from "routing-controllers";
 import { Connection, createConnection } from "typeorm";
-import { isProduction, sslCertExists, sslKeyExists } from "../server/utils/commonMethods";
+import { isProduction, homeDirPath } from "../server/utils/commonMethods";
+import { User } from "./models/User";
+
+import chalk from "chalk";
+import logger from "../server/utils/logger";
+import ServerObject from "./interfaces/ServerObject";
 
 /**
  * Creates and configures an ExpressJS web server.
+ *
  * @class
  */
 export default class Server {
@@ -49,12 +55,47 @@ export default class Server {
         }
     }
 
+    /**
+     * @async
+     * @method createServer - Static method to build Config object and create Server object.
+     * @returns {Promise<ServerObject>}
+     */
+    public static async createServer(): Promise<ServerObject> {
+        const config = await Config.build();
+        return new Server(config);
+    }
+
+    /**
+     * @async
+     * @method boot - Static one method call to start server. Encapsulates migration call for
+     *                tests.
+     * @returns {Promise<ServerObject>}
+     */
+    public static async boot(): Promise<ServerObject> {
+        const config = await Config.build();
+        const server = await new Server(config);
+        await server.run();
+        const dbConnection = await server.dbConnected;
+
+        if (config.get("env") === "test") {
+            try {
+                await dbConnection.undoLastMigration();
+                await dbConnection.runMigrations();
+            } catch (e) {
+                console.log("Error: ", e);
+            }
+        }
+
+        return server;
+    }
+
     // ----------------------------------------------------------------------
     // Properties (non-static)
     // ----------------------------------------------------------------------
 
     /**
-     * @param {express.Application} express - Reference to the express Application Instance.
+     * @param {express.Application} express - Reference to the express
+     *                                        Application Instance.
      */
     public express: express.Application;
 
@@ -73,10 +114,18 @@ export default class Server {
      */
     public port: number;
 
+    public config;
+
     /**
      * @param {Connection} dbConnection - Reference to the typeOrm connection.
      */
-    protected dbConnection: Connection;
+    public dbConnection: Connection;
+
+    /**
+     * @param {Promise<Connection>} dbConnected - Promise based reference to
+     *                                            typeOrm connection.
+     */
+    public dbConnected: Promise<Connection>;
 
     // ----------------------------------------------------------------------
     // Public Methods
@@ -84,33 +133,74 @@ export default class Server {
 
     /**
      * Run configuration methods on the Express instance.
-     * @returns {this}
+     * @returns {ServerObject}
      */
-    constructor() {
+    constructor(config?: Config) {
         this.express = express();
-        this.initConfig();
+        this.config = config;
+        logger.log("debug", "Configuration load: ", config);
         this.middleware();
         this.initDatabase();
         this.initTemplateEngine();
         this.routes();
-        useExpressServer(this.express , {
-            controllers: [Config.serverPath + "/controllers/*{.ts,.js}"],
-            routePrefix: "/api/v1",
-        });
-        logger.debug("Controllers loaded from: " + Config.serverPath + "/controllers/*{.ts,.js}");
+        this.configRouteController();
+        logger.debug("Controllers loaded from: " + config.get("serverPath") + "/controllers/*{.ts,.js}");
         return this;
     }
 
     /**
      * Public method the initiates the (express) Server.
      *
-     * @param {void} port - The Server port to listen on. Defaults to 3000.
+     * @param {number} port - The Server port to listen on. Defaults to 3000.
+     * @returns {http.Server | https.Server}
      */
-    public run(port?: number) {
+    public run(port?: number): http.Server | https.Server {
+        const self = this;
         const server = this.createServer();
-        server.on("error", this.onError);
-        server.on("listening", this.onListening);
+        server.on("error", this.onError.bind(self));
+        server.on("listening", this.onListening.bind(self));
+
+        process.on("uncaughtException", (err) => {
+            logger.log("error", "UnCaught Error => ", err);
+            process.exit(1);
+        });
+        process.on("unhandledRejection", (error) => {
+            console.log("error", " reason: ", error);
+            process.exit(1);
+        });
+
+        process.on("SIGTERM", () => {
+            self.shutdown();
+            process.exit(1);
+        });
+
         return server;
+    }
+
+    /**
+     * Shutdown server gracefully
+     *
+     * @returns {void}
+     */
+    public shutdown(): void {
+        logger.info("Received kill signal, shutting down gracefully");
+
+        try {
+            this.dbConnection.close();
+            logger.info("Shutting down Database connection: ", `[${chalk.green("OK")}]`);
+        } catch (e) {
+            logger.info("Shutting down Database connection: ", `[${chalk.red("FAILED")}]`);
+            logger.log("error", "An error occured while terminating Database connection -", e);
+        }
+
+        logger.info("Shutting down server...");
+        try {
+            Server.server.close();
+            logger.info("Shutting down server: ", `[${chalk.green("OK")}]`);
+        } catch (e) {
+            logger.info("Shutting down server: ", `[${chalk.red("FAILED")}]`);
+            logger.log("error", "An error occured while shutting down the server -", e);
+        }
     }
 
     // ----------------------------------------------------------------------
@@ -123,21 +213,20 @@ export default class Server {
      * @param port - The Server Port to listen on.
      * @returns {https.Server | http.Server}
      */
-    private createServer() {
-        const certPath: any = sslCertExists(true);
-        const keyPath: any = sslKeyExists(true);
+    private createServer(): https.Server | http.Server {
         let server;
-        if (isProduction() && certPath && keyPath) {
-            const sslOptions = {
-                key: fs.readFileSync(keyPath),
-                cert: fs.readFileSync(certPath),
-            };
+        if (isProduction()) {
+            const sslOptions = this.config.get("sslOptions");
+            sslOptions.key = fs.readFileSync( homeDirPath(sslOptions.key) );
+            sslOptions.cert = fs.readFileSync( homeDirPath(sslOptions.cert) );
 
-            server = Server.server = https.createServer(sslOptions, this.express)
-                                          .listen(Config.httpsPort);
+            this.port = Server.normalizePort(this.config.get("httpsPort"));
+            server = Server.server = https
+                                        .createServer(sslOptions, this.express)
+                                        .listen(this.port);
         } else {
-            const normalizedPort = this.port = Server.normalizePort(Config.httpPort);
-            server = Server.server = this.express.listen(normalizedPort);
+            this.port = Server.normalizePort(this.config.get("httpPort"));
+            server = Server.server = this.express.listen(this.port);
             debug("express:server");
         }
 
@@ -147,12 +236,10 @@ export default class Server {
     /**
      * Private method to handle server errors.
      *
-     * @param {NodeJS.ErrnoException} error - The error object.
+     * @param error - The error object.
+     * @returns {void}
      */
-    private onError(error: NodeJS.ErrnoException): void {
-        if (error.syscall !== "listen") {
-            throw error;
-        }
+    private onError(error: any, req, res, next): void {
         const port = this.port;
         const bind = (typeof port === "string") ? "Pipe " + port : "Port " + port;
         switch (error.code) {
@@ -165,12 +252,14 @@ export default class Server {
                 process.exit(1);
                 break;
             default:
-                throw error;
+                this.errorHandler(error, req, res, next);
         }
     }
 
     /**
      * Private method to handle server Listening.
+     *
+     * @returns {void}
      */
     private onListening(): void {
         const address = Server.server.address();
@@ -180,21 +269,67 @@ export default class Server {
 
     /**
      * Configure Express middleware.
+     *
      * @returns {void}
      */
     private middleware(): void {
         logger.info("Initializing Server middlewares...");
 
-        this.express.use(helmet());
-        this.express.use(helmet.hidePoweredBy({ setTo: "TypeWrite" }));
-        this.express.use(bodyParser.json());
-        this.express.use(bodyParser.urlencoded({extended: false}));
-        this.express.use(compression());
-        this.express.disable("x-powered-by");
+        if (this.config.get("APP_ENV") !== "test") {
+            this.express.use(helmet());
+            this.express.use(helmet.hidePoweredBy({ setTo: "TypeWrite" }));
+            this.express.use(bodyParser.json());
+            this.express.use(bodyParser.urlencoded({extended: true}));
+            this.express.use(compression());
+
+            // handle Errors
+            this.express.use(this.logErrors);
+            this.express.use(this.errorHandler);
+        }
+    }
+
+    /**
+     * Common method to log errors.
+     *
+     * @private
+     * @param {Object} err - Error Object.
+     * @param {express.Request} req - Request Object.
+     * @param {express.Response} res - Response Object.
+     * @param {express.NextFunction} next - Next function [callback].
+     * @returns {void}
+     */
+    private logErrors(err, req, res, next): void {
+        logger.log("error", "Error::", err);
+        next(err);
+    }
+
+    /**
+     * Common method to handle errors.
+     *
+     * @private
+     * @param {Object} err - Error Object.
+     * @param {express.Request} req - Request Object.
+     * @param {express.Response} res - Response Object.
+     * @param {express.NextFunction} next - Next function [callback].
+     * @returns {void}
+     */
+    private errorHandler(err, req, res, next): void {
+        if (req.xhr) {
+            if (!res.status()) {
+                res.status(500);
+            }
+            if (err.hasOwnProperty("stack")) {
+                delete err.stack;
+            }
+            res.send({ err });
+        } else {
+            next(err);
+        }
     }
 
     /**
      * Configure API endpoints.
+     *
      * @returns {void}
      */
     private routes(): void {
@@ -214,23 +349,48 @@ export default class Server {
     }
 
     /**
-     * DotEnv initialization
+     * Configure [Route-Controllers](https://github.com/typestack/routing-controllers)
+     *
      * @returns {void}
      */
-    private initConfig(): void {
-        logger.info("Initializing Server configurations...");
-        this.dotEnv = Config.dotEnv;
+    private configRouteController(): void {
+        useExpressServer(this.express , {
+            cors: true,
+            defaultErrorHandler: true,
+            controllers: [this.config.get("serverPath") + "/controllers/*{.ts,.js}"],
+            middlewares: [this.config.get("serverPath") + "/middlewares/*{.ts,.js}"],
+            routePrefix: "/api/v1",
+            authorizationChecker: async (action: Action, roles: string[]) => {
+                const jwtToken = action.request.headers.hasOwnProperty("authorization") ?
+                                action.request.headers.authorization : "";
 
-        logger.log("debug", "Configuration load: ", Config);
+                const payload = jwt.verify(jwtToken, process.env.APP_SECRET);
+
+                if (isObject(payload) && payload.hasOwnProperty("id")) {
+                    const userId = (payload as any).id;
+                    const user: User = await this.dbConnection.getRepository("user").findOneById(userId, {
+                        relations: ["role"],
+                    }) as any;
+
+                    if (user && user.role) {
+                        return roles.indexOf(user.role.type) > -1;
+                    }
+                }
+
+                return false;
+            },
+        });
     }
 
     /**
      * Initialize the Template Engine.
+     *
+     * @returns {void}
      */
     private initTemplateEngine(): void {
         logger.info("Initializing Templating engine...");
 
-        const templatePath = Config.templatePath;
+        const templatePath = this.config.get("templatePath");
         this.tplEngine = nunjucks.configure(templatePath, {
             autoescape: true,
             express: this.express,
@@ -242,21 +402,24 @@ export default class Server {
 
     /**
      * Initialize database connection
+     *
      * @returns {void}
      */
     private initDatabase(): void {
         logger.info("Initializing Database connection...");
 
         const self = this;
-        const typeOrmConf = Config.typeOrm as any;
-        const connection = createConnection(typeOrmConf);
+        const typeOrmConf = this.config.get("typeOrm") as any;
+        self.dbConnected = createConnection(typeOrmConf);
 
-        connection.then((dbConnection) => {
+        self.dbConnected.then((dbConnection) => {
+            // console.log("Db Object -", dbConnection);
             self.dbConnection = dbConnection;
             self.express.set("db", self.dbConnection);
             logger.info("Database connection established");
         }).catch((error) => {
-            logger.error(error.code + ": " + error.message);
+            // logger.log("error", "DB connection error - ", error);
+            console.log("DB connection error - ", error);
         });
     }
 }

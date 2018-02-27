@@ -1,17 +1,17 @@
 {
     "compileOnSave": true,
     "compilerOptions": {
-        "target": "es5",
+        "target": "es6",
         "module": "commonjs",
         "moduleResolution": "node",
-        "outDir": "dist",
+        "outDir": "./dist",
         "emitDecoratorMetadata": true,
         "experimentalDecorators": true,
         "sourceMap": true,
+        "inlineSourceMap": false,
         "noUnusedLocals": true,
         "noUnusedParameters": false,
         "importHelpers": true,
-        "baseUrl": "src",
         "lib": [
             "dom",
             "es5",
@@ -32,7 +32,6 @@
    ],
    "exclude": [
        "node_modules",
-       "tests",
        "dist/.gitignore"
    ]
 }

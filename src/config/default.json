@@ -1,0 +1,43 @@
+{
+    "debug": "{{ env('APP_DEBUG') }}",
+    "basePath": "{{ __basePath }}",
+    "srcPath": "{{ __srcPath }}",
+    "serverPath": "{{ srcPath('/server') }}",
+    "clientPath": "{{ srcPath('/client') }}",
+    "templatePath": "{{ serverPath('/resources/templates') }}",
+    "logPath": "{{ serverPath('/storage/logs') }}",
+    "httpPort": 3000,
+    "httpsPort": 3433,
+    "sslOptions": {
+        "key": "{{ env('SSL_KEY_PATH') }}",
+        "cert": "{{ env('SSL_CERT_PATH') }}",
+        "requestCert": false,
+        "rejectUnauthorized": false
+    },
+    "typeOrm": {
+        "type": "{{ env('DB_TYPE') }}",
+        "host": "{{ env('DB_HOST') }}",
+        "port": "{{ env('DB_PORT') }}",
+        "database": "{{ env('DB_DATABASE') }}",
+        "username": "{{ env('DB_USERNAME') }}",
+        "password": "{{ env('DB_PASSWORD') }}",
+        "synchronize": true,
+        "entities": ["{{ serverPath('/models/*') }}"],
+        "subscribers": ["{{ serverPath('/subscribers/*') }}"],
+        "migrations": ["{{ serverPath('/migrations/*') }}"],
+        "logging": true,
+        "cache": false
+    },
+    "jwt": {
+        "expiresIn": "1d"
+    },
+    "smtp": {
+        "host": "smtp.gmail.com",
+        "port": 465,
+        "secure": true,
+        "auth": {
+            "user": "user@gmail.com",
+            "pass": "pass"
+        }
+    }
+}

@@ -1,4 +1,6 @@
 import Server from "./server/Server";
 
-const server = new Server();
-server.run();
+const server = Server.createServer();
+server.then((app) => {
+    app.run();
+});

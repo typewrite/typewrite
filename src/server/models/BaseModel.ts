@@ -1,8 +1,8 @@
 import * as crypto from "crypto";
 import * as jwt from "jsonwebtoken";
-import * as moment from "moment";
-import {BaseEntity} from "typeorm";
 import * as uuid from "uuid/v4";
+import { BaseEntity } from "typeorm";
+import { Config } from "../utils/Config";
 
 /**
  * @abstract BaseModel - The base model class to be inherited by all models.
@@ -22,9 +22,8 @@ export class BaseModel extends BaseEntity {
      * @returns {string}
      */
     protected createToken(payload?: object): string {
-        const ttl =  parseInt(process.env.APP_TOKEN_EXPIRY, 10);
-        const expires = moment().utc().add({days: ttl}).unix();
-        return jwt.sign(payload || this, process.env.APP_SECRET, {expiresIn: expires});
+        const jwtOptions = Config.instance.get("jwt", { expiry: "1 day" });
+        return jwt.sign(payload || this, process.env.APP_KEY, jwtOptions);
     }
 
     protected generateUUID(namespace?: string) {
