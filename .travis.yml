@@ -6,17 +6,18 @@ node_js:
   - "8"
   - "7"
 before_install:
-  - npm install
-before_script:
-  - cp .test.env .env
-  - chmod +x ./cli.js
-  - ./cli.js key:generate
-  - sudo apt-get update -y && sudo apt-get upgrade -y
+  - sudo apt-get update -y --fix-missing
+  - sudo apt-get upgrade -y
   - sudo apt-get install update-manager-core -y
   - sudo do-release-upgrade -y
   - sudo apt-get install postgresql-10
   - sudo psql -c 'CREATE DATABASE test;' -U postgres
   - sudo psql -c "CREATE USER test WITH PASSWORD 'test';" -U postgres
+  - npm install
+before_script:
+  - cp .test.env .env
+  - chmod +x ./cli.js
+  - ./cli.js key:generate
 cache:
   directories:
     - "node_modules"
