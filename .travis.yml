@@ -7,9 +7,9 @@ node_js:
   - "7"
 before_install:
   - sudo apt-get update -y --fix-missing
-  - sudo apt-get upgrade -y
-  - sudo apt-get install update-manager-core -y
-  - sudo do-release-upgrade -y
+  # - sudo apt-get upgrade -y
+  # - sudo apt-get install update-manager-core -y
+  # - sudo do-release-upgrade -y
   - sudo apt-get install postgresql-10
   - sudo psql -c 'CREATE DATABASE test;' -U postgres
   - sudo psql -c "CREATE USER test WITH PASSWORD 'test';" -U postgres
