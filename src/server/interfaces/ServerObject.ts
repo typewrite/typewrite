@@ -10,10 +10,11 @@ interface ServerObject {
     tplEngine: Environment | object;
     port: number;
     config: object;
-    dbConnection: Connection;
-    dbConnected: Promise<Connection>;
+    dbConnections: Connection[];
+    // dbConnected: Promise<Connection>;
 
     run(): https.Server | http.Server;
+    shutdown(): void;
 }
 
 export default ServerObject;

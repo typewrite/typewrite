@@ -1,3 +1,4 @@
+dist: trusty
 sudo: required
 language: node_js
 node_js:
@@ -11,7 +12,10 @@ before_script:
   - cp .test.env .env
   - chmod +x ./cli.js
   - ./cli.js key:generate
-  - sudo psql -c 'create database test;' -U postgres
+  - sudo apt-get update -y && sudo apt-get upgrade -y
+  - sudo apt-get install update-manager-core -y
+  - sudo do-release-upgrade -y
+  - sudo psql -c 'CREATE DATABASE test;' -U postgres
   - sudo psql -c "CREATE USER test WITH PASSWORD 'test';" -U postgres
 cache:
   directories:

@@ -31,7 +31,7 @@ program.command('key:generate')
             disableGlobs: true,
             files: '.env',
             from: 'APP_KEY=null',
-            to: 'APP_ENV=' + token
+            to: 'APP_KEY=' + token
         })
         .then((changes) => {
             console.log(chalk.green('Key: ' + token + ' generated!'));

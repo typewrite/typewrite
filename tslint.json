@@ -5,6 +5,7 @@
     ],
     "jsRules": {},
     "rules": {
+        "member-ordering": false,
         "object-literal-sort-keys": false,
         "no-console": false,
         "one-variable-per-declaration": false,

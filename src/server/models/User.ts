@@ -7,7 +7,7 @@ import { Role } from "./Role";
 /**
  * @class User - User Entity
  */
-@typeOrm.Entity("user")
+@typeOrm.Entity("user", { name: "default" })
 export class User extends BaseModel {
 
     public static statusActive = "Active";

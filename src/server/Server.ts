@@ -14,8 +14,8 @@ import { Config } from "../server/utils/Config";
 import { inspect, isObject } from "util";
 import { Environment } from "nunjucks";
 import { useExpressServer, Action } from "routing-controllers";
-import { Connection, createConnection } from "typeorm";
-import { isProduction, homeDirPath } from "../server/utils/commonMethods";
+import { Connection, createConnections } from "typeorm";
+import { isProduction, homeDirPath, isset } from "../server/utils/commonMethods";
 import { User } from "./models/User";
 
 import chalk from "chalk";
@@ -30,7 +30,7 @@ import ServerObject from "./interfaces/ServerObject";
 export default class Server {
 
     // ----------------------------------------------------------------------
-    // Static Properties & Methods
+    // Static Properties
     // ----------------------------------------------------------------------
 
     /**
@@ -38,56 +38,7 @@ export default class Server {
      */
     public static server;
 
-    /**
-     * Static method to normalize the port parameter.
-     *
-     * @param {number | string} val - The Port to be normalized.
-     * @returns {number} - Normalized port value, as number.
-     */
-    public static normalizePort(val: number | string): number {
-        const truePort: number = (typeof val === "string") ? parseInt(val, 10) : val;
-        if (isNaN(truePort)) {
-            return 3000;
-        } else if (truePort >= 0) {
-            return truePort;
-        } else {
-            return 3000;
-        }
-    }
-
-    /**
-     * @async
-     * @method createServer - Static method to build Config object and create Server object.
-     * @returns {Promise<ServerObject>}
-     */
-    public static async createServer(): Promise<ServerObject> {
-        const config = await Config.build();
-        return new Server(config);
-    }
-
-    /**
-     * @async
-     * @method boot - Static one method call to start server. Encapsulates migration call for
-     *                tests.
-     * @returns {Promise<ServerObject>}
-     */
-    public static async boot(): Promise<ServerObject> {
-        const config = await Config.build();
-        const server = await new Server(config);
-        await server.run();
-        const dbConnection = await server.dbConnected;
-
-        if (config.get("env") === "test") {
-            try {
-                await dbConnection.undoLastMigration();
-                await dbConnection.runMigrations();
-            } catch (e) {
-                console.log("Error: ", e);
-            }
-        }
-
-        return server;
-    }
+    public static bootQueue;
 
     // ----------------------------------------------------------------------
     // Properties (non-static)
@@ -119,13 +70,161 @@ export default class Server {
     /**
      * @param {Connection} dbConnection - Reference to the typeOrm connection.
      */
-    public dbConnection: Connection;
+    public dbConnections: Connection[];
 
     /**
      * @param {Promise<Connection>} dbConnected - Promise based reference to
      *                                            typeOrm connection.
      */
     public dbConnected: Promise<Connection>;
+
+    // ----------------------------------------------------------------------
+    // Static Properties
+    // ----------------------------------------------------------------------
+
+    /**
+     * Static method to normalize the port parameter.
+     *
+     * @param {number | string} val - The Port to be normalized.
+     * @returns {number} - Normalized port value, as number.
+     */
+    public static normalizePort(val: number | string): number {
+        const truePort: number = (typeof val === "string") ? parseInt(val, 10) : val;
+        if (isNaN(truePort)) {
+            return 3000;
+        } else if (truePort >= 0) {
+            return truePort;
+        } else {
+            return 3000;
+        }
+    }
+
+    /**
+     * @async
+     * @method createServer - Static method to build Config object and create Server object.
+     * @returns {Promise<ServerObject>}
+     */
+    public static async createServer(): Promise<ServerObject> {
+        const config = await Config.build();
+        const connectionConf: any = Server.normalizeConnectionConf(config);
+        const dbConnections = await createConnections(connectionConf);
+        return new Server(config, dbConnections);
+    }
+
+    /**
+     * @async
+     * @method boot - Static one method call to start server. Encapsulates migration call for
+     *                tests.
+     * @returns {Promise<ServerObject>}
+     */
+    public static boot(): Promise<ServerObject> {
+        // const config = await Config.build();
+        // const server = await new Server(config);
+
+        // server.run();
+        // if (config.get("env") === "test") {
+        //     server.dbConnected.then((dbConnection) => {
+        //         dbConnection.undoLastMigration().then((res) => {
+        //             dbConnection.runMigrations()
+        //                 .catch((err) => {
+        //                     console.log("runMigration failed: ", err);
+        //                 });
+        //         })
+        //         .catch((err) => {
+        //             console.log("Database revertion failed: ", err);
+        //         });
+        //     });
+        // }
+        // return server;
+
+        return Server.bootQueue = Promise.all([
+            Config.build().then((config) => {
+                let connectionConf: any = config.get("typeOrm");
+
+                if (!(connectionConf instanceof Array)) {
+                    if (!isset(connectionConf.name)) {
+                        connectionConf.name = "default";
+                    }
+                    connectionConf = [connectionConf];
+                }
+
+                return Server.createDbConnections(connectionConf)
+                    .then((dbConnections: Connection[]) => {
+                        return Server.runTestMigrations(config, dbConnections)
+                            .then(() => {
+                                return dbConnections;
+                            });
+                    })
+                    .then((dbConnections: Connection[]) => {
+                        return new Server(config, dbConnections);
+                    });
+            }),
+        ])
+        .then(([server]) => {
+            server.run();
+            return server;
+        });
+    }
+
+    public static runTestMigrations(config: Config, connections: Connection[]): Promise<any> {
+        if (config.get("env") !== "test") {
+            return Promise.resolve("");
+        } else {
+            return Promise.all([
+                Server.findConnectionByName("test", connections),
+                Server.findConnectionByName("default", connections),
+            ])
+            .then(([connectionsList]) => {
+                if (connectionsList[0] === undefined) {
+                    return connectionsList[1];
+                } else {
+                    return connectionsList[0];
+                }
+            })
+            .then((connection) => {
+                return connection.undoLastMigration().then((res) => {
+                    return connection.runMigrations()
+                        .catch((err) => {
+                            console.log("runMigration failed: ", err);
+                        });
+                })
+                .catch((err) => {
+                    console.log("Database revertion failed: ", err);
+                });
+            });
+        }
+    }
+
+    public static async createDbConnections(typeOrmConf) {
+        logger.info("Initializing Database connection...");
+
+        return createConnections(typeOrmConf).then((dbConnection) => {
+            logger.info("Database connection established");
+            return dbConnection;
+        }).catch((error) => {
+            console.log("DB connection error - ", error);
+        });
+    }
+
+    public static findConnectionByName(name: string, connections: Connection[]) {
+        return connections.map((connection: Connection) => {
+            if (connection.name === name) {
+                return connection;
+            } else {
+                return undefined;
+            }
+        });
+    }
+
+    private static normalizeConnectionConf(config) {
+        let connectionConf: any = config.get("typeOrm");
+        if (!(connectionConf instanceof Array)) {
+            if (!isset(connectionConf.name)) {
+                connectionConf.name = "default";
+            }
+            connectionConf = [connectionConf];
+        }
+    }
 
     // ----------------------------------------------------------------------
     // Public Methods
@@ -135,12 +234,13 @@ export default class Server {
      * Run configuration methods on the Express instance.
      * @returns {ServerObject}
      */
-    constructor(config?: Config) {
+    constructor(config: Config, dbConnections: Connection[]) {
         this.express = express();
         this.config = config;
+        this.dbConnections = dbConnections;
         logger.log("debug", "Configuration load: ", config);
         this.middleware();
-        this.initDatabase();
+        // this.initDatabase();
         this.initTemplateEngine();
         this.routes();
         this.configRouteController();
@@ -185,22 +285,22 @@ export default class Server {
     public shutdown(): void {
         logger.info("Received kill signal, shutting down gracefully");
 
-        try {
-            this.dbConnection.close();
-            logger.info("Shutting down Database connection: ", `[${chalk.green("OK")}]`);
-        } catch (e) {
-            logger.info("Shutting down Database connection: ", `[${chalk.red("FAILED")}]`);
-            logger.log("error", "An error occured while terminating Database connection -", e);
-        }
+        this.dbConnected.then((connection) => {
+            connection.close();
+            logger.info(`Shutting down Database connection: [${chalk.green("OK")}]`);
 
-        logger.info("Shutting down server...");
-        try {
-            Server.server.close();
-            logger.info("Shutting down server: ", `[${chalk.green("OK")}]`);
-        } catch (e) {
-            logger.info("Shutting down server: ", `[${chalk.red("FAILED")}]`);
-            logger.log("error", "An error occured while shutting down the server -", e);
-        }
+            try {
+                Server.server.close();
+                logger.info(`Shutting down server: [${chalk.green("OK")}]`);
+            } catch (e) {
+                logger.info(`Shutting down server: [${chalk.red("FAILED")}]`);
+                logger.log("error", "An error occured while shutting down the server -", e);
+            }
+
+        }).catch((err) => {
+            logger.info(`Shutting down Database connection: "[${chalk.red("FAILED")}]"`);
+            console.log("An error occured while terminating Database connection - ", err);
+        });
     }
 
     // ----------------------------------------------------------------------
@@ -368,7 +468,7 @@ export default class Server {
 
                 if (isObject(payload) && payload.hasOwnProperty("id")) {
                     const userId = (payload as any).id;
-                    const user: User = await this.dbConnection.getRepository("user").findOneById(userId, {
+                    const user: User = await this.dbConnections[0].getRepository("user").findOneById(userId, {
                         relations: ["role"],
                     }) as any;
 
@@ -400,26 +500,26 @@ export default class Server {
         logger.debug("Initialized Templates from " + inspect(templatePath, false, null));
     }
 
-    /**
-     * Initialize database connection
-     *
-     * @returns {void}
-     */
-    private initDatabase(): void {
-        logger.info("Initializing Database connection...");
+    // /**
+    //  * Initialize database connection
+    //  *
+    //  * @returns {void}
+    //  */
+    // private initDatabase(): void {
+    //     logger.info("Initializing Database connection...");
 
-        const self = this;
-        const typeOrmConf = this.config.get("typeOrm") as any;
-        self.dbConnected = createConnection(typeOrmConf);
+    //     const self = this;
+    //     const typeOrmConf = this.config.get("typeOrm") as any;
+    //     self.dbConnected = createConnection(typeOrmConf);
 
-        self.dbConnected.then((dbConnection) => {
-            // console.log("Db Object -", dbConnection);
-            self.dbConnection = dbConnection;
-            self.express.set("db", self.dbConnection);
-            logger.info("Database connection established");
-        }).catch((error) => {
-            // logger.log("error", "DB connection error - ", error);
-            console.log("DB connection error - ", error);
-        });
-    }
+    //     self.dbConnected.then((dbConnection) => {
+    //         // console.log("Db Object -", dbConnection);
+    //         self.dbConnections.push(dbConnection);
+    //         self.express.set("db", self.dbConnections);
+    //         logger.info("Database connection established");
+    //     }).catch((error) => {
+    //         // logger.log("error", "DB connection error - ", error);
+    //         console.log("DB connection error - ", error);
+    //     });
+    // }
 }

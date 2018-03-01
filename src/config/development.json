@@ -1,4 +1,5 @@
 {
+    "debug": true,
     "smtp": {
         "sendmail": true,
         "newline": "unix",
