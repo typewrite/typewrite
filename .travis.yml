@@ -14,13 +14,13 @@ before_install:
   - sudo apt-get remove postgresql
   - sudo apt-get install postgresql-10
   - sudo service postgresql start
-  - sudo psql -c 'CREATE DATABASE test;' -U postgres
-  - sudo psql -c "CREATE USER test WITH PASSWORD 'test';" -U postgres
   - npm install
 before_script:
   - cp .test.env .env
   - chmod +x ./cli.js
   - ./cli.js key:generate
+  - sudo psql -c 'CREATE DATABASE test;' -U postgres
+  - sudo psql -c "CREATE USER test WITH PASSWORD 'test';" -U postgres
 cache:
   directories:
     - "node_modules"
