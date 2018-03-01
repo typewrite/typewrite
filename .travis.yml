@@ -10,7 +10,10 @@ before_install:
   # - sudo apt-get upgrade -y
   # - sudo apt-get install update-manager-core -y
   # - sudo do-release-upgrade -y
+  - sudo service postgresql stop
+  - sudo apt-get remove postgresql
   - sudo apt-get install postgresql-10
+  - sudo service postgresql start
   - sudo psql -c 'CREATE DATABASE test;' -U postgres
   - sudo psql -c "CREATE USER test WITH PASSWORD 'test';" -U postgres
   - npm install
