@@ -17,7 +17,7 @@ before_install:
   - ls -al /etc/postgresql/ 
   - ls -al /etc/postgresql/10/main/
   - sudo cat /etc/postgresql/10/main/pg_hba.conf
-  - sudo service postgresql start
+  - sudo service postgresql restart
   - npm install
 before_script:
   - cp .test.env .env
