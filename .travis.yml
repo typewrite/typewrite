@@ -6,12 +6,15 @@ node_js:
   - "8"
   - "7"
 before_install:
-  - sudo apt-get update -y --fix-missing
-  # - sudo apt-get upgrade -y
-  # - sudo apt-get install update-manager-core -y
-  # - sudo do-release-upgrade -y
   - sudo service postgresql stop
-  - sudo apt-get remove postgresql
+  # - sudo apt-get remove postgresql postgresql-contrib
+  - sudo apt-get remove postgresql-9.1 postgresql-9.2 postgresql-9.3 postgresql-9.4 postgresql-9.5 :""
+  # - sudo apt-get remove postgresql-contrib-9.1 postgresql-contrib-9.2 postgresql-contrib-9.3 postgresql-contrib-9.4 postgresql-contrib-9.5 :""
+  - sudo apt autoremove
+  - sudo apt-get upgrade -y
+  - sudo apt-get update -y --fix-missing
+  - sudo apt-get install update-manager-core -y 
+  - sudo do-release-upgrade -f DistUpgradeViewNonInteractive
   - sudo apt-get install postgresql-10
   - sudo service postgresql start
   - npm install
@@ -24,7 +27,5 @@ before_script:
 cache:
   directories:
     - "node_modules"
-services:
-  - postgresql
 addon:
   posgtgres: "10"
