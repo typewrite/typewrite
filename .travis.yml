@@ -8,6 +8,11 @@ node_js:
 before_install:
   - sudo service postgresql stop
   - sudo cp /etc/postgresql/9.6/main/pg_hba.conf /tmp/pg_hba.conf
+  - sudo cat /etc/postgresql/9.6/main/pg_hba.conf
+  - sudo cat /etc/postgresql/9.5/main/pg_hba.conf
+  - sudo cat /etc/postgresql/9.4/main/pg_hba.conf
+  - sudo cat /etc/postgresql/9.3/main/pg_hba.conf
+  - sudo cat /etc/postgresql/9.2/main/pg_hba.conf
   # - sudo apt-get remove postgresql postgresql-contrib
   # - sudo apt-get --purge remove postgresql-9.1 postgresql-9.2 postgresql-9.3 postgresql-9.4 postgresql-9.5
   - sudo apt-get --purge remove postgresql\*
@@ -29,7 +34,7 @@ before_install:
   # - sudo apt-key add -
   # - sudo apt-get update
   - sudo apt-get install postgresql-10
-  - sudo mv /tmp/pg_hba.conf /etc/postgresql/10/main/pg_hba.conf
+  - sudo cp /tmp/pg_hba.conf /etc/postgresql/10/main/pg_hba.conf
   - sudo service postgresql start
   - npm install
 before_script:
