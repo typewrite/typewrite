@@ -75,7 +75,7 @@ describe("Test UserController", () => {
             });
     });
 
-    it("[POST] /user should add new user", (done) => {
+    it("[POST] /user should add new user", async () => {
         const data = {
             firstName: "Shalom",
             lastName: "k Sam",
@@ -87,7 +87,7 @@ describe("Test UserController", () => {
             password: "qwedsazxc",
         };
 
-        client.post("/api/v1/user")
+        return client.post("/api/v1/user")
             .type("form")
             .send(data)
             .set("Accept", "application/json")
@@ -99,11 +99,11 @@ describe("Test UserController", () => {
                 expect(res.body.user).to.be.instanceOf(Object);
                 expect(res.body.user).to.have.keys("id", "firstName", "lastName",
                 "createdAt", "email", "role", "updatedAt", "userName");
-                done();
+                // done();
             })
             .catch((err) => {
                 console.log(err.error);
-                done(err);
+                // done(err);
             });
     }).timeout(3000);
 
