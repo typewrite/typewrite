@@ -28,6 +28,7 @@ before_install:
   # - sudo apt-key add -
   # - sudo apt-get update
   - sudo apt-get install postgresql-10
+  - sudo cp /etc/postgresql/9.6/main/pg_hba.conf /etc/postgresql/10/main/pg_hba.conf
   - sudo service postgresql start
   - npm install
 before_script:
