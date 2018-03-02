@@ -105,7 +105,7 @@ describe("Test UserController", () => {
                 console.log(err.error);
                 done(err);
             });
-    });
+    }).timeout(3000);
 
     it("[PUT] /user/:id should update user", async () => {
 
