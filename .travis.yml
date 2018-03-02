@@ -7,34 +7,16 @@ node_js:
   - "7"
 before_install:
   - sudo service postgresql stop
-  - sudo cp /etc/postgresql/9.6/main/pg_hba.conf /tmp/pg_hba.conf
-  - sudo cat /etc/postgresql/9.6/main/pg_hba.conf
-  - sudo cat /etc/postgresql/9.5/main/pg_hba.conf
-  - sudo cat /etc/postgresql/9.4/main/pg_hba.conf
-  - sudo cat /etc/postgresql/9.3/main/pg_hba.conf
-  - sudo cat /etc/postgresql/9.2/main/pg_hba.conf
-  # - sudo apt-get remove postgresql postgresql-contrib
-  # - sudo apt-get --purge remove postgresql-9.1 postgresql-9.2 postgresql-9.3 postgresql-9.4 postgresql-9.5
+  - sudo cp /etc/postgresql/9.6/main/pg_hba.conf /pg_hba.conf
   - sudo apt-get --purge remove postgresql\*
-  # - rm -r /etc/postgresql/
-  # - rm -r /etc/postgresql-common/
-  # - rm -r /var/lib/postgresql/
-  # - userdel -r postgres
-  # - groupdel postgres
-  # - sudo apt-get remove postgresql-contrib-9.1 postgresql-contrib-9.2 postgresql-contrib-9.3 postgresql-contrib-9.4 postgresql-contrib-9.5 :""
   - sudo apt autoremove
   - sudo apt-get upgrade -y
   - sudo apt-get update -y --fix-missing
-  - lsb_release -a
-  # - sudo apt-get install update-manager-core -y
-  # - sudo do-release-upgrade -f DistUpgradeViewNonInteractive
-  # - sudo touch /etc/apt/sources.list.d/pgdg.list
-  # - sudo echo "deb http://apt.postgresql.org/pub/repos/apt/ trusty-pgdg main" >> /etc/apt/sources.list.d/pgdg.list
-  # - wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc
-  # - sudo apt-key add -
-  # - sudo apt-get update
   - sudo apt-get install postgresql-10
-  - sudo cp /tmp/pg_hba.conf /etc/postgresql/10/main/pg_hba.conf
+  - sudo cp /pg_hba.conf /etc/postgresql/10/main/pg_hba.conf
+  - ls -al /etc/postgresql/ 
+  - ls -al /etc/postgresql/10/main/
+  - cat /etc/postgresql/10/main/pg_hba.conf
   - sudo service postgresql start
   - npm install
 before_script:
@@ -48,3 +30,21 @@ cache:
     - "node_modules"
 addon:
   posgtgres: "10"
+
+
+
+# - sudo apt-get remove postgresql postgresql-contrib
+# - sudo apt-get --purge remove postgresql-9.1 postgresql-9.2 postgresql-9.3 postgresql-9.4 postgresql-9.5
+# - rm -r /etc/postgresql/
+# - rm -r /etc/postgresql-common/
+# - rm -r /var/lib/postgresql/
+# - userdel -r postgres
+# - groupdel postgres
+# - sudo apt-get remove postgresql-contrib-9.1 postgresql-contrib-9.2 postgresql-contrib-9.3 postgresql-contrib-9.4 postgresql-contrib-9.5 :""
+# - sudo apt-get install update-manager-core -y
+# - sudo do-release-upgrade -f DistUpgradeViewNonInteractive
+# - sudo touch /etc/apt/sources.list.d/pgdg.list
+# - sudo echo "deb http://apt.postgresql.org/pub/repos/apt/ trusty-pgdg main" >> /etc/apt/sources.list.d/pgdg.list
+# - wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc
+# - sudo apt-key add -
+# - sudo apt-get update
