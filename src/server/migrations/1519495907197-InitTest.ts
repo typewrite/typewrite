@@ -3,17 +3,6 @@ import {MigrationInterface, QueryRunner} from "typeorm";
 export class InitTest1519495907197 implements MigrationInterface {
 
     public async up(queryRunner: QueryRunner): Promise<any> {
-        // // Name: plpgsql; Type: EXTENSION; Schema: -; Owner:
-        // await queryRunner.query(`CREATE EXTENSION IF NOT EXISTS plpgsql WITH SCHEMA pg_catalog;`);
-
-        // // Name: uuid-ossp; Type: EXTENSION; Schema: -; Owner:
-        // await queryRunner.query(`CREATE EXTENSION IF NOT EXISTS "uuid-ossp" WITH SCHEMA public;`);
-
-        // await queryRunner.query(`
-        //     SET search_path = public, pg_catalog;
-        //     SET default_tablespace = '';
-        //     SET default_with_oids = false;
-        // `);
 
         // Name: role; Type: TABLE; Schema: public; Owner:
         await queryRunner.query(`
@@ -191,29 +180,6 @@ export class InitTest1519495907197 implements MigrationInterface {
                 1
             );
         `);
-
-        // // Name: role_id_seq; Type: SEQUENCE SET; Schema: public; Owner:
-        // await queryRunner.query(`SELECT pg_catalog.setval('role_id_seq', 2, true)`);
-
-        // // Name: role role_pkey; Type: CONSTRAINT; Schema: public; Owner:
-        // await queryRunner.query(`ALTER TABLE ONLY role
-        // ADD CONSTRAINT role_pkey PRIMARY KEY (id);`);
-
-        // // Name: role uk_role_type; Type: CONSTRAINT; Schema: public; Owner:
-        // await queryRunner.query(`ALTER TABLE ONLY role
-        // ADD CONSTRAINT uk_role_type UNIQUE (type);`);
-
-        // // Name: user uk_user_email; Type: CONSTRAINT; Schema: public; Owner:
-        // await queryRunner.query(`ALTER TABLE ONLY "user"
-        // ADD CONSTRAINT uk_user_email UNIQUE (email);`);
-
-        // // Name: user user_pkey; Type: CONSTRAINT; Schema: public; Owner:
-        // await queryRunner.query(`ALTER TABLE ONLY "user"
-        // ADD CONSTRAINT user_pkey PRIMARY KEY (id);`);
-
-        // // Name: user fk_e0dfceb137dcd339834d9629b55; Type: FK CONSTRAINT; Schema: public; Owner:
-        // await queryRunner.query(`ALTER TABLE ONLY "user"
-        // ADD CONSTRAINT fk_e0dfceb137dcd339834d9629b55 FOREIGN KEY ("roleId") REFERENCES role(id);`);
     }
 
     public async down(queryRunner: QueryRunner): Promise<any> {
