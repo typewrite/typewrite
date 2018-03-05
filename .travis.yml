@@ -16,6 +16,7 @@ before_install:
   - sudo cp /pg_hba.conf /etc/postgresql/10/main/pg_hba.conf
   - sudo cat /etc/postgresql/10/main/pg_hba.conf
   - sudo service postgresql restart
+install:
   - npm install
 before_script:
   - sudo psql -c 'CREATE DATABASE test;' -U postgres
@@ -23,6 +24,8 @@ before_script:
   - cp .test.env .env
   - chmod +x ./cli.js
   - ./cli.js key:generate
+script:
+  - npm run test:coverage
 cache:
   directories:
     - "node_modules"

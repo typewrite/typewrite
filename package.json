@@ -1,16 +1,16 @@
 {
   "name": "node-blogger",
   "version": "1.0.0",
-  "main": "dist/index.js",
   "description": "Node blogger CMS tool. Alternative to Wordpress and Ghost",
   "author": "Shalom Sam",
   "license": "MIT",
+  "main": "dist/index.js",
   "engines": {
     "node": ">=8.9.3"
   },
   "repository": {
-      "type": "git",
-      "url": "https://github.com/typewrite/typewrite"
+    "type": "git",
+    "url": "https://github.com/typewrite/typewrite"
   },
   "nyc": {
     "all": true,
@@ -37,8 +37,9 @@
     "start": "npx gulp build && node dist/index.js",
     "build": "npx gulp build",
     "dev": "npx nodemon",
-    "test": "snyk test && NODE_ENV=test mocha --opts './tests/mocha.opts'",
-    "coverage": "NODE_ENV=test nyc mocha --opts './tests/mocha.opts' && nyc report --reporter=text-lcov | coveralls"
+    "test": "NODE_ENV=test mocha --opts './tests/mocha.opts'",
+    "test:snyk": "snyk test",
+    "test:coverage": "NODE_ENV=test nyc mocha --opts './tests/mocha.opts' && nyc report --reporter=text-lcov | coveralls"
   },
   "devDependencies": {
     "@types/bcryptjs": "^2.4.1",

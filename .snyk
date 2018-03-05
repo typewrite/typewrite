@@ -1,4 +1,46 @@
 # Snyk (https://snyk.io) policy file, patches or ignores known vulnerabilities.
 version: v1.10.1
-ignore: {}
+# ignores vulnerabilities until expiry date; change duration by modifying expiry date
+ignore:
+  'npm:debug:20170905':
+    - nunjucks > chokidar > fsevents > node-pre-gyp > tar-pack > debug:
+        reason: No updates present
+        expires: '2018-04-04T14:30:21.960Z'
+  'npm:tough-cookie:20170905':
+    - nunjucks > chokidar > fsevents > node-pre-gyp > request > tough-cookie:
+        reason: No Updates present
+        expires: '2018-04-04T14:30:21.960Z'
+  'npm:braces:20180219':
+    - nunjucks > chokidar > anymatch > micromatch > braces:
+        reason: No Updates present
+        expires: '2018-04-04T14:30:21.960Z'
+  'npm:hoek:20180212':
+    - nunjucks > chokidar > fsevents > node-pre-gyp > hawk > hoek:
+        reason: No updates availabel
+        expires: '2018-04-04T14:30:21.961Z'
+    - nunjucks > chokidar > fsevents > node-pre-gyp > hawk > boom > hoek:
+        reason: No updates available
+        expires: '2018-04-04T14:30:21.961Z'
+    - nunjucks > chokidar > fsevents > node-pre-gyp > hawk > sntp > hoek:
+        reason: No updates available
+        expires: '2018-04-04T14:30:21.961Z'
+    - nunjucks > chokidar > fsevents > node-pre-gyp > hawk > cryptiles > boom > hoek:
+        reason: No updates available
+        expires: '2018-04-04T14:30:21.961Z'
+    - nunjucks > chokidar > fsevents > node-pre-gyp > request > hawk > hoek:
+        reason: no updates available
+        expires: '2018-04-04T14:30:21.961Z'
+    - nunjucks > chokidar > fsevents > node-pre-gyp > request > hawk > boom > hoek:
+        reason: no updates available
+        expires: '2018-04-04T14:30:21.961Z'
+    - nunjucks > chokidar > fsevents > node-pre-gyp > request > hawk > sntp > hoek:
+        reason: no updates available
+        expires: '2018-04-04T14:30:21.961Z'
+    - nunjucks > chokidar > fsevents > node-pre-gyp > request > hawk > cryptiles > boom > hoek:
+        reason: no updates available
+        expires: '2018-04-04T14:30:21.961Z'
+  'npm:validator:20180218':
+    - routing-controllers > class-validator > validator:
+        reason: no updates available
+        expires: '2018-04-04T14:30:21.961Z'
 patch: {}
