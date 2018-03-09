@@ -39,5 +39,9 @@
             "user": "user@gmail.com",
             "pass": "pass"
         }
+    },
+    "marked": {
+        "gfm": true,
+        "table": true
     }
 }

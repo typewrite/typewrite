@@ -36,6 +36,26 @@ export class InitTest1519495907197 implements MigrationInterface {
             );
         `);
 
+        // Name: story; Type: TABLE; Schema: public; Owner:
+        await queryRunner.query(`
+            CREATE TABLE IF NOT EXISTS "story" (
+                id character varying NOT NULL,
+                uuid character varying NOT NULL,
+                title character varying NOT NULL,
+                slug character varying NOT NULL,
+                "isFeatured" boolean DEFAULT false NOT NULL,
+                status character varying DEFAULT 'editing'::character varying NOT NULL,
+                language character varying(2) DEFAULT 'en'::character varying NOT NULL,
+                metas json DEFAULT '[]'::json NOT NULL,
+                "authorId" character varying NOT NULL,
+                "pulisherId" character varying,
+                text text NOT NULL,
+                "publishedAt" date,
+                "createdAt" timestamp without time zone DEFAULT now() NOT NULL,
+                "updatedAt" timestamp without time zone DEFAULT now() NOT NULL
+            );
+        `);
+
         // Name: role_id_seq; Type: SEQUENCE; Schema: public; Owner:
         await queryRunner.query(`
             CREATE SEQUENCE IF NOT EXISTS role_id_seq
@@ -53,6 +73,11 @@ export class InitTest1519495907197 implements MigrationInterface {
         await queryRunner.query(`
             ALTER TABLE ONLY role ALTER COLUMN id SET DEFAULT nextval('role_id_seq'::regclass);
         `);
+
+        // // Name: story id; Type: ADD CONSTRAINT; Schema: public; Owner:
+        // await queryRunner.query(`
+        //     ALTER TABLE ONLY story ADD CONSTRAINT story_pkey PRIMARY KEY (id);
+        // `);
 
         // Data for Name: role; Type: TABLE DATA; Schema: public; Owner:
         await queryRunner.query(`
@@ -180,6 +205,51 @@ export class InitTest1519495907197 implements MigrationInterface {
                 1
             );
         `);
+
+        // Data for Name: story; Type: TABLE DATA; Schema: public; Owner:
+        await queryRunner.query(`
+            INSERT INTO "story" (
+                "id", "uuid", "title", "slug", "authorId", "text", "createdAt", "updatedAt"
+            )
+            VALUES (
+                'd47807d629a2f7e1826fce903bb0b18b',
+                '11a516c7-cc77-4136-92da-329adbe79ae8',
+                'This is a test title',
+                'this-is-a-test-title',
+                '38f1b33aba8d9bd3d5108aec661a72eb',
+                '### YO YO YO!! \n <p>Test html</p> \n [this is a link](http://google.com)',
+                '2018-03-07T04:52:22.314Z',
+                '2018-03-07T04:52:22.314Z'
+            );
+
+            INSERT INTO "story" (
+                "id", "uuid", "title", "slug", "authorId", "text", "createdAt", "updatedAt"
+            )
+            VALUES (
+                'e1b6b01d018ab1d8138bb3f8a70bf580',
+                '55bbd633-8149-44a9-80a2-32503be13bd1',
+                'This is a another test title',
+                'this-is-a-another-test-title',
+                '38f1b33aba8d9bd3d5108aec661a72eb',
+                '### HEY HEY HEY!! \n <div>Test html div tags</div> \n*[this is a emphasized link](http://google.com)*',
+                '2018-03-07T04:52:22.314Z',
+                '2018-03-07T04:52:22.314Z'
+            );
+
+            INSERT INTO "story" (
+                "id", "uuid", "title", "slug", "authorId", "text", "createdAt", "updatedAt"
+            )
+            VALUES (
+                '0160a258dd77e20e6c261cbd8bc4bbd1',
+                'c3b786e0-441d-422d-8e48-3b72c0f586d2',
+                'This is a another test title',
+                'this-is-a-another-test-title',
+                '38f1b33aba8d9bd3d5108aec661a72eb',
+                '# H1 header! \n <div>some sample html</div> \n*[some random emphasized link](http://google.com)*',
+                '2018-03-07T04:52:22.314Z',
+                '2018-03-07T04:52:22.314Z'
+            );
+        `);
     }
 
     public async down(queryRunner: QueryRunner): Promise<any> {
@@ -187,6 +257,7 @@ export class InitTest1519495907197 implements MigrationInterface {
         await queryRunner.query(`
             delete from "user";
             delete from "role";
+            delete from "story";
         `);
     }
 

@@ -34,7 +34,7 @@ describe("Test UserController", () => {
                 expect(res.body.users).to.be.a("array");
                 expect(res.body.users[0]).to.be.instanceof(Object);
                 expect(res.body.users[0]).to.have.keys("id", "firstName", "lastName",
-                "createdAt", "email", "emailIsVerified", "status", "updatedAt", "userName");
+                "createdAt", "email", "emailIsVerified", "status", "role", "updatedAt", "userName");
                 expect(res.body.pagination).to.be.instanceof(Object);
                 expect(res.body.pagination).to.have.keys("currentPage", "totalPages", "count",
                 "limit", "prev", "next");
@@ -58,8 +58,12 @@ describe("Test UserController", () => {
                 expect(res.body.status).to.be.eq("success");
                 expect(res.body.user).to.be.instanceof(Object);
                 expect(res.body.user).to.have.keys("id", "firstName", "lastName",
-                "createdAt", "email", "emailIsVerified", "status", "updatedAt", "userName");
+                "createdAt", "email", "emailIsVerified", "status", "role", "updatedAt", "userName");
+            })
+            .catch((err) => {
+                return err;
             });
+
     }).timeout(1000);
 
     it("[GET] /user/:id invalid userId should give error", (done) => {
@@ -99,11 +103,9 @@ describe("Test UserController", () => {
                 expect(res.body.user).to.be.instanceOf(Object);
                 expect(res.body.user).to.have.keys("id", "firstName", "lastName",
                 "createdAt", "email", "role", "updatedAt", "userName");
-                // done();
             })
             .catch((err) => {
-                console.log(err.error);
-                // done(err);
+                return err;
             });
     }).timeout(3000);
 
@@ -123,6 +125,9 @@ describe("Test UserController", () => {
                 expect(res.body.user).to.be.instanceof(Object);
                 expect(res.body.user.firstName).to.be.eq("changedFName");
                 expect(res.body.user.lastName).to.be.eq("changedLName");
+            })
+            .catch((err) => {
+                return err;
             });
     });
 
@@ -136,6 +141,9 @@ describe("Test UserController", () => {
                 expect(res.body.user).to.have.keys("id", "firstName", "lastName",
                 "createdAt", "email", "emailIsVerified", "status", "updatedAt", "userName");
                 expect(res.body.user.status).to.be.eq("Deleted");
+            })
+            .catch((err) => {
+                return err;
             });
     });
 });

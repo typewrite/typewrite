@@ -5,14 +5,24 @@ import { BaseModel } from "./BaseModel";
 import { Role } from "./Role";
 
 /**
+ * @private
+ * @param {enum} - Valid statuses.
+ */
+enum States {
+    Active,
+    Suspended,
+    Deleted,
+}
+
+/**
  * @class User - User Entity
  */
 @typeOrm.Entity("user")
 export class User extends BaseModel {
 
-    public static statusActive = "Active";
-    public static statusSuspended = "Suspended";
-    public static statusDeleted = "Deleted";
+    public static states = States;
+
+    public static relations = ["role"];
 
     public static exclude = {
         incoming: {
@@ -113,7 +123,7 @@ export class User extends BaseModel {
     /**
      * @property {string} status - User status
      */
-    @typeOrm.Column({ default: User.statusActive })
+    @typeOrm.Column({ default: User.states.Active })
     public status: string;
 
     /**

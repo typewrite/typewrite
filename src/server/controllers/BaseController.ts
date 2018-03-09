@@ -48,36 +48,14 @@ export class BaseController {
         const self = this;
 
         let limit = queryParams !== undefined && queryParams.hasOwnProperty("limit") ? queryParams.limit : 100;
-        let count = queryParams !== undefined &&
-            queryParams.hasOwnProperty("count") ? queryParams.count : await this.modelObj.count();
-
-        limit = parseInt(limit, 10);
-        count = parseInt(count, 10);
-
-        const totalPages = limit > count ? 1 : (count / limit);
         const currentPage = queryParams !== undefined && queryParams.hasOwnProperty("page") ? queryParams.page : 1;
-        const nextPage = currentPage === totalPages ? currentPage : (currentPage + 1);
-        const prevPage = currentPage === 1 ? 1 : (currentPage - 1);
-        let next, prev;
-        next = prev = req.path + "?";
-        next = `${next}page=${nextPage}&limit=${limit}&count=${count}&totalPages=${totalPages}`;
-        prev = `${prev}page=${prevPage}&limit=${limit}&count=${count}&totalPages=${totalPages}`;
-
-        const pagination = {
-            currentPage,
-            totalPages,
-            count,
-            limit,
-            next,
-            prev,
-        };
-
-        this.setPagination(pagination);
-
+        limit = parseInt(limit, 10);
         const skip = (currentPage - 1) * limit;
 
+        this.setPagination(req, queryParams);
+
         this.setUp(req, res);
-        return this.modelObj.find({ skip, take: limit })
+        return this.modelObj.find({ skip, take: limit, relations: this.getRelations() })
             .then(self.handleSuccess.bind(self))
             .catch(self.handleError.bind(self));
     }
@@ -96,10 +74,10 @@ export class BaseController {
                   : Promise<express.Response> {
 
         this.setUp(req, res);
-        return this.modelObj.findOne({id})
+        return this.modelObj.findOne({ where: { id } , relations: this.getRelations() })
             .then((response) => {
                 if (response === undefined) {
-                    throw new HttpError(404, "User Not found");
+                    throw new HttpError(404, `Entity(${this.modelName}) Not found`);
                 }
                 return response;
             })
@@ -172,10 +150,10 @@ export class BaseController {
         return this.modelObj.findOne({id})
             .then((entity) => {
                 return entity.remove()
-                    .then(this.handleSuccess)
-                    .catch(this.handleError);
+                    .then(this.handleSuccess.bind(this))
+                    .catch(this.handleError.bind(this));
             })
-            .catch(this.handleError);
+            .catch(this.handleError.bind(this));
     }
 
     /**
@@ -276,8 +254,15 @@ export class BaseController {
 
         const obj = {};
         let modelName = this.modelName.toLowerCase();
+        const lastY = modelName.length - 1;
+
         // add plural (to key name) for arrays
-        modelName = (response instanceof Array) ? modelName + "s" : modelName;
+        if (response instanceof Array) {
+            // replace last occurance of "y" with "ies" else only append "s"
+            modelName = modelName[lastY] === "y" ?
+                modelName.replace(/y(?![\w]*y)/, "ies") : modelName + "s";
+        }
+
         // sanitize entity with its exclude list
         this.sanitize(response, false);
         obj[modelName] = response;
@@ -310,8 +295,34 @@ export class BaseController {
      * @param {Object} paginationObj
      * @returns {void}
      */
-    private setPagination(paginationObj: object): void {
-        this.pagination = paginationObj;
+    private async setPagination(req, queryParams: any): Promise<void> {
+
+        let limit = queryParams !== undefined && queryParams.hasOwnProperty("limit") ? queryParams.limit : 100;
+        let count = queryParams !== undefined &&
+            queryParams.hasOwnProperty("count") ? queryParams.count : await this.modelObj.count();
+
+        limit = parseInt(limit, 10);
+        count = parseInt(count, 10);
+
+        const totalPages = limit > count ? 1 : (count / limit);
+        const currentPage = queryParams !== undefined && queryParams.hasOwnProperty("page") ? queryParams.page : 1;
+        const nextPage = currentPage === totalPages ? currentPage : (currentPage + 1);
+        const prevPage = currentPage === 1 ? 1 : (currentPage - 1);
+        let next, prev;
+        next = prev = req.path + "?";
+        next = `${next}page=${nextPage}&limit=${limit}&count=${count}&totalPages=${totalPages}`;
+        prev = `${prev}page=${prevPage}&limit=${limit}&count=${count}&totalPages=${totalPages}`;
+
+        const pagination = {
+            currentPage,
+            totalPages,
+            count,
+            limit,
+            next,
+            prev,
+        };
+
+        this.pagination = pagination;
     }
 
     /**
@@ -354,6 +365,20 @@ export class BaseController {
 
         if (this.modelObj.hasOwnProperty("exclude") && this.modelObj.exclude.hasOwnProperty(type)) {
             return this.modelObj.exclude[type][method] || this.modelObj.exclude[type].default;
+        } else {
+            return [];
+        }
+    }
+
+    /**
+     * Returns the relationships to load.
+     *
+     * @private
+     * @returns {string[]}
+     */
+    private getRelations(): string[] {
+        if (this.modelObj.hasOwnProperty("relations")) {
+            return this.modelObj.relations;
         } else {
             return [];
         }

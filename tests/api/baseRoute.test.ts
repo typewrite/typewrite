@@ -4,7 +4,6 @@ import chaiHttp = require("chai-http");
 import Server from "../../src/server/Server";
 
 chai.use(chaiHttp);
-// const host = "http://localhost:3005";
 const expect = chai.expect;
 let server;
 let client;
