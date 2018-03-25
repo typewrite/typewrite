@@ -1,0 +1,116 @@
+{% extends "../dashboard.njk" %}
+
+{% block cssBlock %}
+    {{ super() }}
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/simplemde/latest/simplemde.min.css">
+    <style type="text/css">
+        #storyForm .title {
+            font-size: 32px;
+            font-weight: 800;
+            margin-bottom: 10px;
+        }
+    </style>
+{% endblock %}
+
+{% block scriptBlock %}
+    {{ super() }}
+    <script src="https://cdn.jsdelivr.net/simplemde/latest/simplemde.min.js"></script>
+    <script>
+        var simplemde = new SimpleMDE({
+            autosave: {
+                enable: true,
+                uniqueId: "{{ markdownId }}",
+                forceSync: true,
+                placeholder: "Type/Write your story...",
+            },
+            element: $("#markdown")[0],
+        });
+
+        $(document).ready(function() {
+
+        })
+    </script>
+{% endblock %}
+
+{% block dashboardHeader %}
+    {# override #}
+{% endblock %}
+
+{% block dashboardContent %}
+    <div class="col-xs-12 col-sm-12 col-lg-12">
+        <form id="storyForm" method="post" action="/admin/story/{{ story.id }}">
+            <input type="hidden" name="csrf" value="{{ csrfToken }}">
+            <input type="text" class="form-control title" placeholder="Story Title" name="title"
+                value="{{ story.title }}">
+            <p class="settingsWrp my-4">
+                <a href="#settings" class="btn btn-light" data-toggle="collapse" role="button" aria-expanded="false"
+                    aria-controls="settings">
+                    Post Settings
+                </a>
+            </p>
+            <div id="settings" class="collapse">
+                <div class="card card-body">
+                    <div class="metasContainer">
+                        <div class="cardWrp row">
+                            <div class="col-sm-6">
+                                <div class="card" style="width: 18rem;">
+                                    <div class="card-header">Facebook Metas</div>
+                                    {% if story.primaryImagePath | length %}
+                                        <img class="card-img-top" src="{{ story.primaryImagePath }}">
+                                    {% else %}
+                                        <img class="card-img-top" data-src="holder.js/100px180/?text=Image-cap"
+                                            alt="Image cap [100%x180]" data-holder-rendered="true">
+                                    {% endif %}
+                                    <div class="card-body">
+                                        <label for="fbTitle">Title</label>
+                                        <input id="fbTitle" type="text" name="metas.facebook.title" 
+                                            value="{{ metas.facebook.title }}" />
+                                        <label for="fbDesc">Description</label>
+                                        <textarea name="metas.facebook.description" id="fbDesc"
+                                            style="width: 100%;">{{ metas.facebook.description }}</textarea>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-sm-6">
+                                <div class="card" style="width: 18rem;">
+                                    <div class="card-header">Facebook Metas</div>
+                                    {% if story.primaryImagePath | length %}
+                                        <img class="card-img-top" src="{{ story.primaryImagePath }}">
+                                    {% else %}
+                                        <img class="card-img-top" data-src="holder.js/100px180/?text=Image-cap"
+                                            alt="Image cap [100%x180]" data-holder-rendered="true">
+                                    {% endif %}
+                                    <div class="card-body">
+                                        <label for="fbTitle">Title</label>
+                                        <input id="fbTitle" type="text" name="metas.facebook.title" 
+                                            value="{{ metas.facebook.title }}" />
+                                        <label for="fbDesc">Description</label>
+                                        <textarea name="metas.facebook.description" id="fbDesc"
+                                            style="width: 100%;">{{ metas.facebook.description }}</textarea>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="imageWrp">
+                    {% if story.primaryImagePath | length %}
+                        <div class="imgWrp">
+                            <img src="{{ story.primaryImagePath }}" alt="{{ story.title }}">
+                        </div>
+                    {% endif %}
+                </div>
+                </div>
+            </div>
+            <textarea name="markdown" id="markdown" class="form-control" width="100%">{{ story.markdown | trim }}</textarea>
+            {% if alert %}
+                <div class="alert alert-{{ alert.type }} alert-dismissible fade show" role="alert">
+                    {{ alert.messages[0] }}
+                    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+            {% endif %}
+            <button class="btn btn-lg btn-success" type="submit">Save</button>
+        </form>
+    </div>
+{% endblock %}

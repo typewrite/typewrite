@@ -1,7 +1,6 @@
-import { isset } from "../../server/utils/commonMethods";
 import { PathLike } from "fs";
 import { resolve } from "path";
-import { env, boolVal } from "../utils/commonMethods";
+import { env, boolVal, isset } from "../lib/common";
 import * as nunjucks from "nunjucks";
 import * as dotenv from "dotenv";
 import * as fs from "fs";
@@ -28,9 +27,10 @@ export class Config {
      * @returns {Promise<Config>}
      */
     public static async build(): Promise<Config> {
-        const basePath = fs.realpathSync(__dirname + "/../../../");
-        const srcPath = fs.realpathSync(__dirname + "/../../");
-        const serverPath = fs.realpathSync(__dirname + "/../../server");
+        const basePath = fs.realpathSync(__dirname + "/../../");
+        const srcPath = fs.realpathSync(__dirname + "/../");
+        const clientPath = fs.realpathSync(__dirname + "/../client");
+        const serverPath = fs.realpathSync(__dirname + "/../server");
         const dotFile = basePath + "/.env";
         const dotEnv = await dotenv.config({
             path: dotFile,
@@ -63,6 +63,9 @@ export class Config {
             },
             serverPath: (path) => {
                 return resolve(serverPath + path);
+            },
+            clientPath: (path) => {
+                return resolve(clientPath + path);
             },
             int: (val) => {
                 return parseInt(val, 10);

@@ -1,6 +1,5 @@
 import * as rc from "routing-controllers";
-import { Config } from "../utils/Config";
-// import logger from '../utils/logger';
+import { Config } from "../../lib/Config";
 
 @rc.Middleware({ type: "after" })
 export class ErrorHandler implements rc.ExpressErrorMiddlewareInterface {

@@ -4,7 +4,7 @@ import * as logger from "winston";
 import {User} from "../models/User";
 import Server from "../Server";
 import * as nunjucks from "nunjucks";
-import { ConfigPromise } from "../utils/Config";
+import { ConfigPromise } from "../../lib/Config";
 
 @EventSubscriber()
 export class NewUserSubscriber implements EntitySubscriberInterface <User> {

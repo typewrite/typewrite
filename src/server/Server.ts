@@ -10,17 +10,22 @@ import * as nunjucks from "nunjucks";
 import * as helmet from "helmet";
 import * as jwt from "jsonwebtoken";
 
-import { Config } from "../server/utils/Config";
-import { inspect, isObject } from "util";
+import { Config } from "../lib/Config";
+import { isObject } from "util";
 import { Environment } from "nunjucks";
 import { useExpressServer, Action } from "routing-controllers";
 import { Connection, createConnection } from "typeorm";
-import { isProduction, homeDirPath } from "../server/utils/commonMethods";
+import { isProduction, homeDirPath } from "../lib/common";
 import { User } from "./models/User";
+import { EventDispatcher } from "../lib/EventDispatcher";
+import { Spinner } from "cli-spinner";
 
 import chalk from "chalk";
-import logger from "../server/utils/logger";
-import ServerObject from "./interfaces/ServerObject";
+import logger from "../lib/Logger";
+import ServerObject from "../interfaces/ServerObject";
+
+const CLI_OK = `[${chalk.green("OK")}]`;
+const CLI_FAIL = `[${chalk.red("FAIL")}]`;
 
 /**
  * Creates and configures an ExpressJS web server.
@@ -32,28 +37,6 @@ export default class Server {
     // ----------------------------------------------------------------------
     // Static Properties & Methods
     // ----------------------------------------------------------------------
-
-    /**
-     * @static @param {object} server - The Server Object.
-     */
-    public static server;
-
-    /**
-     * Static method to normalize the port parameter.
-     *
-     * @param {number | string} val - The Port to be normalized.
-     * @returns {number} - Normalized port value, as number.
-     */
-    public static normalizePort(val: number | string): number {
-        const truePort: number = (typeof val === "string") ? parseInt(val, 10) : val;
-        if (isNaN(truePort)) {
-            return 3000;
-        } else if (truePort >= 0) {
-            return truePort;
-        } else {
-            return 3000;
-        }
-    }
 
     /**
      * @async
@@ -90,8 +73,18 @@ export default class Server {
     }
 
     // ----------------------------------------------------------------------
-    // Properties (non-static)
+    // Properties (non-static/public)
     // ----------------------------------------------------------------------
+
+    /**
+     * @param {object} server - The Server Object.
+     */
+    public server;
+
+    /**
+     * @param {string} type - Whether an API server OR Client Server.
+     */
+    public type = this.constructor.name;
 
     /**
      * @param {express.Application} express - Reference to the express
@@ -114,7 +107,15 @@ export default class Server {
      */
     public port: number;
 
+    /**
+     * @param {Config} config - The Config object.
+     */
     public config;
+
+    /**
+     * @param {EventDispatcher} dispatcher - The Event Dispatcher object.
+     */
+    public dispatcher;
 
     /**
      * @param {Connection} dbConnection - Reference to the typeOrm connection.
@@ -137,14 +138,13 @@ export default class Server {
      */
     constructor(config?: Config) {
         this.express = express();
-        this.config = config;
-        logger.log("debug", "Configuration load: ", config);
+        this.initDispatcher();
+        this.initConfig(config);
         this.middleware();
         this.initDatabase();
         this.initTemplateEngine();
         this.routes();
         this.configRouteController();
-        logger.debug("Controllers loaded from: " + config.get("serverPath") + "/controllers/*{.ts,.js}");
         return this;
     }
 
@@ -187,19 +187,253 @@ export default class Server {
 
         try {
             this.dbConnection.close();
-            logger.info("Shutting down Database connection: ", `[${chalk.green("OK")}]`);
+            logger.info("Shutting down Database connection: ", CLI_OK);
         } catch (e) {
-            logger.info("Shutting down Database connection: ", `[${chalk.red("FAILED")}]`);
+            logger.info("Shutting down Database connection: ", CLI_FAIL);
             logger.log("error", "An error occured while terminating Database connection -", e);
         }
 
         logger.info("Shutting down server...");
         try {
-            Server.server.close();
-            logger.info("Shutting down server: ", `[${chalk.green("OK")}]`);
+            this.server.close();
+            logger.info("Shutting down server: ", CLI_OK);
         } catch (e) {
-            logger.info("Shutting down server: ", `[${chalk.red("FAILED")}]`);
+            logger.info("Shutting down server: ", CLI_FAIL);
             logger.log("error", "An error occured while shutting down the server -", e);
+        }
+    }
+
+    // ----------------------------------------------------------------------
+    // Protected Methods
+    // ----------------------------------------------------------------------
+
+    /**
+     * Get Server port.
+     *
+     * @param {boolean} useHttps - Whether to get SSL port or HTTP port.
+     */
+    protected getPort(useHttps: boolean = false) {
+        const type = useHttps ? "httpsPort" : "httpPort";
+        return this.normalizePort(this.config.get(`api.${type}`));
+    }
+
+    /**
+     * Initiate Dispatcher for Events Layer.
+     *
+     * @returns {void}
+     */
+    protected initDispatcher() {
+        const dispatcher = this.dispatcher = new EventDispatcher();
+        const middlewareSpinner = new Spinner("Initializing Server Middlewares - %s");
+        const routesSpinner = new Spinner("Initializing Server Routes - %s");
+        const controllerSpinner = new Spinner("Initializing Server Controllers - %s");
+        const templateSpinner = new Spinner("Initializing Template Engine - %s");
+        const databaseSpinner = new Spinner("Initializing Database - %s");
+        const cliServerType = chalk.yellow(this.type);
+
+        dispatcher.on("config:loaded", (config) => {
+            logger.info(`${cliServerType}: Configuration loaded: - ${CLI_OK}`);
+            logger.log("debug", "Configuration load: ", config);
+            logger.debug("Controllers loaded from: " + config.get("serverPath") + "/controllers/*{.ts,.js}");
+        });
+
+        dispatcher.on("middleware:init", () => {
+            middlewareSpinner.start();
+        });
+        dispatcher.on("middleware:loaded", () => {
+            middlewareSpinner.stop(true);
+            logger.info(`${cliServerType}: Initializing Server Middlewares - ${CLI_OK}`);
+        });
+
+        dispatcher.on("routes:init", () => {
+            routesSpinner.start();
+        });
+        dispatcher.on("routes:loaded", () => {
+            routesSpinner.stop(true);
+            logger.info(`${cliServerType}: Initializing Server Routes - ${CLI_OK}`);
+        });
+
+        dispatcher.on("controllers:init", () => {
+            controllerSpinner.start();
+        });
+        dispatcher.on("controllers:loaded", () => {
+            controllerSpinner.stop(true);
+            logger.info(`${cliServerType}: Initializing Server Controllers - ${CLI_OK}`);
+        });
+
+        dispatcher.on("templates:init", () => {
+            templateSpinner.start();
+        });
+        dispatcher.on("templates:loaded", (templateEngine, templatePath) => {
+            templateSpinner.stop(true);
+            logger.info(`${cliServerType}: Initializing Template Engine - ${CLI_OK}`);
+            logger.debug("Initialized Templates from " + templatePath);
+        });
+
+        dispatcher.on("database:init", () => {
+            databaseSpinner.start();
+        });
+        dispatcher.on("database:loaded", () => {
+            databaseSpinner.stop(true);
+            logger.info(`${cliServerType}: Initializing Database - ${CLI_OK}`);
+        });
+        dispatcher.on("databased:errored", (error) => {
+            databaseSpinner.stop(true);
+            logger.info(`${cliServerType}: Initializing Database - ${CLI_FAIL}`);
+            logger.log("debug", "DB connection error - ", error);
+        });
+    }
+
+    /**
+     * Initiate Config object.
+     *
+     * @param config - Config Object.
+     * @returns {void}
+     */
+    protected initConfig(config: Config) {
+        this.config = config;
+        this.dispatcher.emit("config:loaded", config);
+    }
+
+    /**
+     * Configure Express middleware.
+     *
+     * @returns {void}
+     */
+    protected middleware(): void {
+        this.dispatcher.emit("middleware:init");
+
+        if (this.config.get("APP_ENV") !== "test") {
+            this.express.use(helmet());
+            this.express.use(helmet.hidePoweredBy({ setTo: "TypeWrite" }));
+            this.express.use(bodyParser.json());
+            this.express.use(bodyParser.urlencoded({extended: true}));
+            this.express.use(compression());
+
+            // handle Errors
+            this.express.use(this.logErrors);
+            this.express.use(this.errorHandler);
+        }
+
+        this.dispatcher.emit("middleware:loaded");
+    }
+
+    /**
+     * Configure API endpoints.
+     *
+     * @returns {void}
+     */
+    protected routes(): void {
+
+        this.dispatcher.emit("routes:init");
+
+        /* This is just to get up and running, and to make sure what we've got is
+         * working so far. This function will change when we start to add more
+         * API endpoints */
+        const router = express.Router();
+
+        router.get("/", (req, res) => {
+            res.json({
+                message: "Connection Successful",
+            });
+        });
+        this.express.use("/api/v1/", router);
+
+        this.dispatcher.emit("routes:loaded");
+    }
+
+    /**
+     * Configure [Route-Controllers](https://github.com/typestack/routing-controllers)
+     *
+     * @returns {void}
+     */
+    protected configRouteController(): void {
+        this.dispatcher.emit("controllers:init");
+
+        useExpressServer(this.express , {
+            cors: true,
+            defaultErrorHandler: true,
+            controllers: [this.config.get("serverPath") + "/controllers/*{.ts,.js}"],
+            middlewares: [this.config.get("serverPath") + "/middlewares/*{.ts,.js}"],
+            routePrefix: "/api/v1",
+            authorizationChecker: async (action: Action, roles: string[]) => {
+                const jwtToken = action.request.headers.hasOwnProperty("authorization") ?
+                                action.request.headers.authorization : "";
+
+                const payload = jwt.verify(jwtToken, process.env.APP_SECRET);
+
+                if (isObject(payload) && payload.hasOwnProperty("id")) {
+                    const userId = (payload as any).id;
+                    const user: User = await this.dbConnection.getRepository("user").findOneById(userId, {
+                        relations: ["role"],
+                    }) as any;
+
+                    if (user && user.role) {
+                        return roles.indexOf(user.role.type) > -1;
+                    }
+                }
+
+                return false;
+            },
+        });
+        this.dispatcher.emit("controllers:loaded");
+    }
+
+    /**
+     * Initialize the Template Engine.
+     *
+     * @returns {void}
+     */
+    protected initTemplateEngine(): void {
+
+        this.dispatcher.emit("templates:init");
+
+        const templatePath = this.config.get("api.templatePath");
+        this.tplEngine = nunjucks.configure(templatePath, {
+            autoescape: true,
+            express: this.express,
+        });
+        this.express.set("tplEngine", this.tplEngine);
+
+        this.dispatcher.emit("templates:loaded", this.tplEngine, templatePath);
+    }
+
+    /**
+     * Initialize database connection
+     *
+     * @returns {void}
+     */
+    protected initDatabase(): void {
+
+        this.dispatcher.emit("database:init");
+
+        const self = this;
+        const typeOrmConf = this.config.get("typeOrm") as any;
+        self.dbConnected = createConnection(typeOrmConf);
+
+        self.dbConnected.then((dbConnection) => {
+            self.dbConnection = dbConnection;
+            self.express.set("db", self.dbConnection);
+            self.dispatcher.emit("database:loaded");
+        }).catch((error) => {
+            self.dispatcher.emit("database:errored", error);
+        });
+    }
+
+    /**
+     * Static method to normalize the port parameter.
+     *
+     * @param {number | string} val - The Port to be normalized.
+     * @returns {number} - Normalized port value, as number.
+     */
+    protected normalizePort(val: number | string): number {
+        const truePort: number = (typeof val === "string") ? parseInt(val, 10) : val;
+        if (isNaN(truePort)) {
+            return 3000;
+        } else if (truePort >= 0) {
+            return truePort;
+        } else {
+            return 3000;
         }
     }
 
@@ -220,13 +454,13 @@ export default class Server {
             sslOptions.key = fs.readFileSync( homeDirPath(sslOptions.key) );
             sslOptions.cert = fs.readFileSync( homeDirPath(sslOptions.cert) );
 
-            this.port = Server.normalizePort(this.config.get("httpsPort"));
-            server = Server.server = https
+            this.port = this.getPort(true);
+            server = this.server = https
                                         .createServer(sslOptions, this.express)
                                         .listen(this.port);
         } else {
-            this.port = Server.normalizePort(this.config.get("httpPort"));
-            server = Server.server = this.express.listen(this.port);
+            this.port = this.getPort();
+            server = this.server = this.express.listen(this.port);
             debug("express:server");
         }
 
@@ -262,30 +496,9 @@ export default class Server {
      * @returns {void}
      */
     private onListening(): void {
-        const address = Server.server.address();
+        const address = this.server.address();
         const bind = (typeof address === "string") ? `pipe ${address}` : `port ${address.port}`;
         logger.info(`Listening on ${bind}`);
-    }
-
-    /**
-     * Configure Express middleware.
-     *
-     * @returns {void}
-     */
-    private middleware(): void {
-        logger.info("Initializing Server middlewares...");
-
-        if (this.config.get("APP_ENV") !== "test") {
-            this.express.use(helmet());
-            this.express.use(helmet.hidePoweredBy({ setTo: "TypeWrite" }));
-            this.express.use(bodyParser.json());
-            this.express.use(bodyParser.urlencoded({extended: true}));
-            this.express.use(compression());
-
-            // handle Errors
-            this.express.use(this.logErrors);
-            this.express.use(this.errorHandler);
-        }
     }
 
     /**
@@ -325,101 +538,5 @@ export default class Server {
         } else {
             next(err);
         }
-    }
-
-    /**
-     * Configure API endpoints.
-     *
-     * @returns {void}
-     */
-    private routes(): void {
-        logger.info("Initializing Server routes...");
-
-        /* This is just to get up and running, and to make sure what we've got is
-         * working so far. This function will change when we start to add more
-         * API endpoints */
-        const router = express.Router();
-
-        router.get("/", (req, res) => {
-            res.json({
-                message: "Connection Successful",
-            });
-        });
-        this.express.use("/api/v1/", router);
-    }
-
-    /**
-     * Configure [Route-Controllers](https://github.com/typestack/routing-controllers)
-     *
-     * @returns {void}
-     */
-    private configRouteController(): void {
-        useExpressServer(this.express , {
-            cors: true,
-            defaultErrorHandler: true,
-            controllers: [this.config.get("serverPath") + "/controllers/*{.ts,.js}"],
-            middlewares: [this.config.get("serverPath") + "/middlewares/*{.ts,.js}"],
-            routePrefix: "/api/v1",
-            authorizationChecker: async (action: Action, roles: string[]) => {
-                const jwtToken = action.request.headers.hasOwnProperty("authorization") ?
-                                action.request.headers.authorization : "";
-
-                const payload = jwt.verify(jwtToken, process.env.APP_SECRET);
-
-                if (isObject(payload) && payload.hasOwnProperty("id")) {
-                    const userId = (payload as any).id;
-                    const user: User = await this.dbConnection.getRepository("user").findOneById(userId, {
-                        relations: ["role"],
-                    }) as any;
-
-                    if (user && user.role) {
-                        return roles.indexOf(user.role.type) > -1;
-                    }
-                }
-
-                return false;
-            },
-        });
-    }
-
-    /**
-     * Initialize the Template Engine.
-     *
-     * @returns {void}
-     */
-    private initTemplateEngine(): void {
-        logger.info("Initializing Templating engine...");
-
-        const templatePath = this.config.get("templatePath");
-        this.tplEngine = nunjucks.configure(templatePath, {
-            autoescape: true,
-            express: this.express,
-        });
-        this.express.set("tplEngine", this.tplEngine);
-
-        logger.debug("Initialized Templates from " + inspect(templatePath, false, null));
-    }
-
-    /**
-     * Initialize database connection
-     *
-     * @returns {void}
-     */
-    private initDatabase(): void {
-        logger.info("Initializing Database connection...");
-
-        const self = this;
-        const typeOrmConf = this.config.get("typeOrm") as any;
-        self.dbConnected = createConnection(typeOrmConf);
-
-        self.dbConnected.then((dbConnection) => {
-            // console.log("Db Object -", dbConnection);
-            self.dbConnection = dbConnection;
-            self.express.set("db", self.dbConnection);
-            logger.info("Database connection established");
-        }).catch((error) => {
-            // logger.log("error", "DB connection error - ", error);
-            console.log("DB connection error - ", error);
-        });
     }
 }

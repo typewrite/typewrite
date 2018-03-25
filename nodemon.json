@@ -1,6 +1,7 @@
 {
  "watch": ["src"],
- "ext": "ts",
+ "ext": "ts njk",
  "ignore": ["tests"],
- "exec": "npx ts-node ./src/index.ts"
+ "exec": "npx ts-node ./src/index.ts",
+ "delay": "2000"
 }

@@ -1,0 +1,52 @@
+{% extends "../dashboard.njk" %}
+
+{% block cssBlock %}
+    {{ super() }}
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/simplemde/latest/simplemde.min.css">
+    <style type="text/css">
+        #newStory .title {
+            font-size: 32px;
+            font-weight: 800;
+            margin-bottom: 10px;
+        }
+    </style>
+{% endblock %}
+
+{% block scriptBlock %}
+    {{ super() }}
+    <script src="https://cdn.jsdelivr.net/simplemde/latest/simplemde.min.js"></script>
+    <script>
+        var simplemde = new SimpleMDE({
+            autosave: {
+                enable: true,
+                uniqueId: "{{ markdownId }}",
+                forceSync: true,
+                placeholder: "Type/Write your story..."
+            },
+            element: $("#markdown")[0],
+        });
+    </script>
+{% endblock %}
+
+{% block dashboardHeader %}
+    {# override #}
+{% endblock %}
+
+{% block dashboardContent %}
+    <div class="col-xs-12 col-sm-12 col-lg-12">
+        <form id="newStory" method="post" action="/admin/story/new">
+            <input type="hidden" name="csrf" value="{{ csrfToken }}">
+            <input type="text" class="form-control title" placeholder="Story Title" name="title">
+            <textarea name="markdown" id="markdown" class="form-control" width="100%"></textarea>
+            {% if alert %}
+                <div class="alert alert-{{ alert.type }} alert-dismissible fade show" role="alert">
+                    {{ alert.messages[0] }}
+                    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+            {% endif %}
+            <button class="btn btn-lg btn-success" type="submit">Save</button>
+        </form>
+    </div>
+{% endblock %}

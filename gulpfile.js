@@ -6,7 +6,12 @@ const sourcemaps = require('gulp-sourcemaps');
 const tsProjectSrc = ts.createProject('tsconfig.json');
 
 gulp.task('cleanDist', () => {
-	gulp.src(['dist/*', '!dist/.gitignore']).pipe(clean());
+	return gulp.src(['dist/*', '!dist/.gitignore']).pipe(clean());
+});
+
+gulp.task('copy:config', () => {
+	return gulp.src(['src/config/*'])
+		.pipe(gulp.dest("dist/config"));
 });
 
 gulp.task('build:src', () => {
@@ -22,9 +27,10 @@ gulp.task('watch', ['build:src'], () => {
 });
 
 gulp.task('dev', ['watch']);
+
 gulp.task('build', done => {
-	runSequence('cleanDist', 'build:src', () => {
+	runSequence('cleanDist', 'copy:config', 'build:src', () => {
 		done();
-	})
+	});
 });
 gulp.task('default', ['watch']);

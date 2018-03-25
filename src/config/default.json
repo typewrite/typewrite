@@ -4,10 +4,20 @@
     "srcPath": "{{ __srcPath }}",
     "serverPath": "{{ srcPath('/server') }}",
     "clientPath": "{{ srcPath('/client') }}",
-    "templatePath": "{{ serverPath('/resources/templates') }}",
     "logPath": "{{ serverPath('/storage/logs') }}",
-    "httpPort": 3000,
-    "httpsPort": 3433,
+    "client": {
+        "httpPort": 1234,
+        "httpsPort": 443,
+        "templatePath": "{{ clientPath('/main-site/themes/default/templates') }}"
+    },
+    "api": {
+        "httpPort": 3000,
+        "httpsPort": 3443,
+        "templatePath": "{{ serverPath('/resources/templates') }}"
+    },
+    "admin": {
+        "templatePath": "{{ clientPath('/admin/themes/default/templates') }}"
+    },
     "sslOptions": {
         "key": "{{ env('SSL_KEY_PATH') }}",
         "cert": "{{ env('SSL_CERT_PATH') }}",

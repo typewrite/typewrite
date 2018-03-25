@@ -33,7 +33,7 @@ describe("Test StoryController", () => {
                 expect(res.body.stories).to.be.a("array");
                 expect(res.body.stories[0]).to.be.instanceof(Object);
                 expect(res.body.stories[0]).to.have.keys("id", "uuid", "title", "slug",
-                "isFeatured", "status", "language", "metas", "authorId", "publisherId",
+                "isFeatured", "status", "language", "metas",
                 "publishedAt", "createdAt", "updatedAt", "text", "html");
                 expect(res.body.pagination).to.be.instanceof(Object);
                 expect(res.body.pagination).to.have.keys("currentPage", "totalPages", "count",

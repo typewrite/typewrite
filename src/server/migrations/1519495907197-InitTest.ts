@@ -49,7 +49,7 @@ export class InitTest1519495907197 implements MigrationInterface {
                 metas json DEFAULT '[]'::json NOT NULL,
                 "authorId" character varying NOT NULL,
                 "pulisherId" character varying,
-                text text NOT NULL,
+                markdown text NOT NULL,
                 "publishedAt" date,
                 "createdAt" timestamp without time zone DEFAULT now() NOT NULL,
                 "updatedAt" timestamp without time zone DEFAULT now() NOT NULL
@@ -90,6 +90,16 @@ export class InitTest1519495907197 implements MigrationInterface {
             VALUES (
                 2, 'Admin', '{Publish,Edit,Write,Add-User,Read,Comment}',
                 '2018-01-18 14:16:13.88', '2018-01-18 14:16:13.88'
+            );
+            INSERT INTO role (id, type, permissions, "updatedAt", "createdAt")
+            VALUES (
+                3, 'Author', '{Publish,Edit,Write,Read,Comment}',
+                '2018-01-18 13:25:27.105', '2018-01-18 13:25:27.105'
+            );
+            INSERT INTO role (id, type, permissions, "updatedAt", "createdAt")
+            VALUES (
+                4, 'Publisher', '{Publish,Edit,Write,Read,Comment}',
+                '2018-01-18 13:25:27.105', '2018-01-18 13:25:27.105'
             );
         `);
 
@@ -181,7 +191,7 @@ export class InitTest1519495907197 implements MigrationInterface {
                 'Active',
                 '2018-02-08 14:31:01.912',
                 '2018-02-08 14:31:01.912',
-                2
+                3
             );
             INSERT INTO "user" (
                 id, uuid, "firstName", "lastName", "userName", email, "emailIsVerified",
@@ -202,7 +212,7 @@ export class InitTest1519495907197 implements MigrationInterface {
                 'Active',
                 '2018-02-08 16:34:54.893',
                 '2018-02-08 16:34:54.893',
-                1
+                4
             );
         `);
 
@@ -216,7 +226,7 @@ export class InitTest1519495907197 implements MigrationInterface {
                 '11a516c7-cc77-4136-92da-329adbe79ae8',
                 'This is a test title',
                 'this-is-a-test-title',
-                '38f1b33aba8d9bd3d5108aec661a72eb',
+                '2a956e60f854019a6b1726abed40a9a6',
                 '### YO YO YO!! \n <p>Test html</p> \n [this is a link](http://google.com)',
                 '2018-03-07T04:52:22.314Z',
                 '2018-03-07T04:52:22.314Z'
@@ -230,7 +240,7 @@ export class InitTest1519495907197 implements MigrationInterface {
                 '55bbd633-8149-44a9-80a2-32503be13bd1',
                 'This is a another test title',
                 'this-is-a-another-test-title',
-                '38f1b33aba8d9bd3d5108aec661a72eb',
+                '2a956e60f854019a6b1726abed40a9a6',
                 '### HEY HEY HEY!! \n <div>Test html div tags</div> \n*[this is a emphasized link](http://google.com)*',
                 '2018-03-07T04:52:22.314Z',
                 '2018-03-07T04:52:22.314Z'
@@ -244,7 +254,7 @@ export class InitTest1519495907197 implements MigrationInterface {
                 'c3b786e0-441d-422d-8e48-3b72c0f586d2',
                 'This is a another test title',
                 'this-is-a-another-test-title',
-                '38f1b33aba8d9bd3d5108aec661a72eb',
+                '2a956e60f854019a6b1726abed40a9a6',
                 '# H1 header! \n <div>some sample html</div> \n*[some random emphasized link](http://google.com)*',
                 '2018-03-07T04:52:22.314Z',
                 '2018-03-07T04:52:22.314Z'
@@ -255,9 +265,9 @@ export class InitTest1519495907197 implements MigrationInterface {
     public async down(queryRunner: QueryRunner): Promise<any> {
         // Empty all tables
         await queryRunner.query(`
+            delete from "story";
             delete from "user";
             delete from "role";
-            delete from "story";
         `);
     }
 

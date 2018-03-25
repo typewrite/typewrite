@@ -2,8 +2,9 @@ import * as typeOrm from "typeorm";
 import * as fs from "fs";
 import * as marked from "marked";
 import { BaseModel } from "./BaseModel";
-import { Config } from "../utils/Config";
-import { serverPath } from "../utils/commonMethods";
+import { Config } from "../../lib/Config";
+import { serverPath, stripHtml } from "../../lib/common";
+import { User } from "./User";
 
 /**
  * @readonly
@@ -84,26 +85,38 @@ export class Story extends BaseModel {
      * @property {object[]} metas - An array of objects as key=>value pairs, that
      *                              are to be set as the sites meta (key=>values).
      */
-    @typeOrm.Column("json", { default: [] })
-    public metas: object[] = [];
+    @typeOrm.Column("json", { default: {} })
+    public metas: object = {};
 
     /**
-     * @property {string} authorId - The author of the story.
+     * @property {User} author - The author of the story.
      */
-    @typeOrm.Column()
-    public authorId: string;
+    @typeOrm.ManyToOne((type) => User)
+    public author: User;
 
     /**
-     * @property {string} publisherId - The publisher of the story.
+     * @property {User} publisher - The publisher of the story.
      */
-    @typeOrm.Column({ nullable: true })
-    public publisherId: string;
+    @typeOrm.ManyToOne((type) => User)
+    public publisher: User;
 
     /**
-     * @property {string} text - The story content as plain text.
+     * @property {string} markdown - The story content as plain text.
      */
     @typeOrm.Column("text")
-    public text: string;
+    public markdown: string;
+
+    /**
+     * @property {string} primaryImagePath - The Primary Image (relative) path.
+     */
+    @typeOrm.Column({ nullable: true })
+    public primaryImagePath: string;
+
+    /**
+     * @property {string[]} tags - The tags associated with the story.
+     */
+    @typeOrm.Column("varchar", { isArray: true })
+    public tags: string[] = [];
 
     /**
      * @property {Date} publishedAt - Time and date when the story was published.
@@ -134,6 +147,26 @@ export class Story extends BaseModel {
         this.uuid = this.generateUUID();
         this.id = this.generateShortId(this.uuid);
         this.slug = this.generateUrlSlug(this.title);
+        this.metas = {
+            facebook: {
+                site_name: "",
+                url: "",
+                type: "article",
+                title: this.title,
+                image: "",
+                desciption: "",
+            },
+            twitter: {
+                site: "",
+                url: "",
+                type: "summary",
+                title: this.title,
+                image: "",
+                description: "",
+                creator: "",
+            },
+            others: "",
+        };
     }
 
     /**
@@ -159,7 +192,7 @@ export class Story extends BaseModel {
         if (fs.existsSync(storyHtml)) {
             this.html = fs.readFileSync(storyHtml).toString();
         } else {
-            this.html = marked(this.text);
+            this.html = marked(this.markdown);
             fs.writeFileSync(storyHtml, this.html);
         }
     }
@@ -175,7 +208,7 @@ export class Story extends BaseModel {
             .get("storyFilePath", serverPath("/storage/stories"));
         const storyHtml = storiesDir + "/" + this.id + ".html";
 
-        this.html = marked(this.text);
+        this.html = marked(this.markdown);
         fs.writeFileSync(storyHtml, this.html);
     }
 

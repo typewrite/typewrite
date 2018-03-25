@@ -12,7 +12,8 @@
         "interface-name": false,
         "no-var-requires": {
             "severity": "warn"
-        }
+        },
+        "member-ordering": false
     },
     "rulesDirectory": []
 }

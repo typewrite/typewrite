@@ -1,7 +1,7 @@
 import * as winstonLogger from "winston";
 import * as rotatedLog from "winston-daily-rotate-file";
-import { ConfigPromise } from "../utils/Config";
-import { boolVal } from "../utils/commonMethods";
+import { ConfigPromise } from "../lib/Config";
+import { boolVal } from "../lib/common";
 
 const winston = require("winston");
 
@@ -51,7 +51,7 @@ ConfigPromise.then((Config) => {
                 prettyPrint: true,
             }),
         ],
-    });
+    } as any);
 });
 
 export default winstonLogger;

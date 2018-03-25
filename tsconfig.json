@@ -28,7 +28,8 @@
         "src/index.ts",
         "src/server/**/*",
         "src/client/**/*",
-        "src/config/*"
+        "src/config/*",
+        "src/lib/**/*"
    ],
    "exclude": [
        "node_modules",

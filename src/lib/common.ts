@@ -1,5 +1,5 @@
 import * as os from "os";
-import { Config } from "../utils/Config";
+import { Config } from "../lib/Config";
 import { resolve } from "path";
 
 export function isset(param: any) {
@@ -34,18 +34,11 @@ export function boolVal(val): boolean {
     return (/true/i).test(val);
 }
 
-// export function sslKeyExists(returnPath?: boolean): string | boolean {
-//     const keyPath = process.env.SSL_KEY_PATH || os.homedir() + "/.ssl/privatekey.key";
-//     const exists = fs.existsSync(keyPath);
-//     return exists && returnPath ? keyPath : exists;
-// }
+export function stripHtml(html): string {
+    const doc = new DOMParser().parseFromString(html, "text/html");
+    return doc.body.textContent || "";
+}
 
-// export function sslCertExists(returnPath?: boolean): string | boolean {
-//     const certPath = process.env.SSL_CERT_PATH || os.homedir() + "/.ssl/certificate.crt";
-//     const exists = fs.existsSync(certPath);
-//     return exists && returnPath ? certPath : exists;
-// }
-
-export function env(param: string, defaultValue = false) {
+export function env(param: string, defaultValue: any = false) {
     return process.env[param] || defaultValue;
 }

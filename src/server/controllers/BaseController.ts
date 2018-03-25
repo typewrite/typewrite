@@ -1,7 +1,7 @@
 import * as express from "express";
 import {BaseEntity, Connection, getConnection} from "typeorm";
 import { HttpError } from "routing-controllers";
-import { Config } from "../utils/Config";
+import { Config } from "../../lib/Config";
 
 /**
  * Base Controller class to contain common methods/properties accessible

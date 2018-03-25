@@ -1,0 +1,52 @@
+{% extends "../dashboard.njk" %}
+
+{% block cssBlock %}
+    {{ super() }}
+    <style>
+        .card-text {
+            font-size: 16px;
+        }
+    </style>
+{% endblock %}
+
+{% set dashboardTitle = "Your stories" %}
+{% block dashboardContent %}
+    <div class="col-sm-12">
+        {% if alert.messages | length %}
+            <div class="alert alert-danger">
+                {{ alert.messages[0] }}
+            </div>
+        {% else %}
+            {% for story in stories %}
+                <div class="card w-100 mb-4">
+                    <div class="card-body">
+                        <h3 class="card-title">
+                            <a href="/admin/story/{{ story.id }}">
+                                {{ story.title }}
+                            </a>
+                        </h3>
+                        <div class="card-text">
+                            {{ story.html | striptags(true) | truncate(150) | trim }}
+                        </div>
+                        <section class="meta">
+                            {% if story.isFeatured %}
+                                <a href="#" class="badge badge-success">Featured</a>
+                            {% endif %}
+                            <a href="#" class="badge badge-info">{{ story.status }}</a>
+                            <span class="mx-1">by</span>
+                            <a href="#" class="link author">{{ story.author.firstName }} {{ story.author.lastName }}</a>
+                            <span class="mx-1">---</span>
+                            <span class="mx-1">{{ story.createdAt }}</span>
+                        </section>
+                    </div>
+                </div>
+            {% else %}
+                <h3>No Stories written yet!</h3>
+                <p>Would you like to add a new story?</p>
+                <div class="text-center">
+                    <a href="/admin/story/new" class="btn btn-lg btn-primary">New Story</a>
+                </div>
+            {% endfor %}
+        {% endif %}
+    </div>
+{% endblock %}

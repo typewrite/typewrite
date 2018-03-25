@@ -2,7 +2,7 @@ import * as crypto from "crypto";
 import * as jwt from "jsonwebtoken";
 import * as uuid from "uuid/v4";
 import { BaseEntity } from "typeorm";
-import { Config } from "../utils/Config";
+import { Config } from "../../lib/Config";
 
 /**
  * @abstract BaseModel - The base model class to be inherited by all models.

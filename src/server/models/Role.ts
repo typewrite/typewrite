@@ -1,6 +1,5 @@
 import * as typeOrm from "typeorm";
 import { BaseModel } from "./BaseModel";
-// import { User } from "./User";
 
 export enum Permissions {
     Publish = "publish",

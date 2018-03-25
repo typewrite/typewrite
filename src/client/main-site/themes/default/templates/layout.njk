@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>{{ title }}</title>
+        {% for meta in metas %}
+            <meta 
+                {% for key, val in meta %}
+                    {{ key }}={{ val }}
+                {% endfor %}
+            />
+        {% endfor %}
+    </head>
+    <body>
+        {% include "./common/header.njk" %}
+
+        {% block contentBlock %}            
+        {% endblock %}
+
+        {% include "./common/footer.njk" %}
+    </body>
+</html>

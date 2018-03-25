@@ -1,6 +1,6 @@
 import * as chai from "chai";
 import * as fs from "fs";
-import { basePath } from "../src/server/utils/commonMethods";
+import { basePath } from "../src/lib/common";
 
 const expect = chai.expect;
 

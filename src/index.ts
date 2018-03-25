@@ -1,6 +1,5 @@
-import Server from "./server/Server";
+// import Server from "./server/Server";
+import ClientServer from "./client/ClientServer";
 
-const server = Server.createServer();
-server.then((app) => {
-    app.run();
-});
+// Server.boot();
+ClientServer.boot();
