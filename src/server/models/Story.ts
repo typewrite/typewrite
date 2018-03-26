@@ -5,6 +5,7 @@ import { BaseModel } from "./BaseModel";
 import { Config } from "../../lib/Config";
 import { serverPath, stripHtml } from "../../lib/common";
 import { User } from "./User";
+import { Website } from "./Website";
 
 /**
  * @readonly
@@ -147,23 +148,28 @@ export class Story extends BaseModel {
         this.uuid = this.generateUUID();
         this.id = this.generateShortId(this.uuid);
         this.slug = this.generateUrlSlug(this.title);
+        this.setMetas();
+    }
+
+    private async setMetas() {
+        const website = await Website.findOneById(1);
         this.metas = {
             facebook: {
-                site_name: "",
-                url: "",
+                site_name: website.name,
+                url: website.getBaseUrl(this.slug),
                 type: "article",
                 title: this.title,
-                image: "",
-                desciption: "",
+                image: website.getBaseUrl(this.primaryImagePath),
+                desciption: stripHtml(this.html),
             },
             twitter: {
-                site: "",
-                url: "",
+                site: website.name,
+                url: website.getBaseUrl(this.slug),
                 type: "summary",
                 title: this.title,
-                image: "",
-                description: "",
-                creator: "",
+                image: website.getBaseUrl(this.primaryImagePath),
+                description: stripHtml(this.html),
+                creator: this.author.getFullName(),
             },
             others: "",
         };

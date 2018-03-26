@@ -173,6 +173,10 @@ export class User extends BaseModel {
         return this;
     }
 
+    public getFullName(): string {
+        return this.firstName + " " + this.lastName;
+    }
+
     /**
      * Return a JWT token with current user (object) as payload
      *
