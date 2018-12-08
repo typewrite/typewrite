@@ -1,5 +1,5 @@
 # Snyk (https://snyk.io) policy file, patches or ignores known vulnerabilities.
-version: v1.10.1
+version: v1.13.1
 # ignores vulnerabilities until expiry date; change duration by modifying expiry date
 ignore:
   'npm:debug:20170905':
@@ -43,4 +43,14 @@ ignore:
     - routing-controllers > class-validator > validator:
         reason: no updates available
         expires: '2018-04-04T14:30:21.961Z'
-patch: {}
+# patches apply the minimum changes required to fix a vulnerability
+patch:
+  'npm:hoek:20180212':
+    - nunjucks > chokidar > fsevents > node-pre-gyp > hawk > hoek:
+        patched: '2018-12-08T05:13:40.601Z'
+    - nunjucks > chokidar > fsevents > node-pre-gyp > hawk > boom > hoek:
+        patched: '2018-12-08T05:13:40.601Z'
+    - nunjucks > chokidar > fsevents > node-pre-gyp > hawk > sntp > hoek:
+        patched: '2018-12-08T05:13:40.601Z'
+    - nunjucks > chokidar > fsevents > node-pre-gyp > hawk > cryptiles > boom > hoek:
+        patched: '2018-12-08T05:13:40.601Z'
