@@ -8,6 +8,7 @@ node_modules/
 tmp/
 ormconfig.json
 dist
+database/
 
 !dist/.gitignore
 !.test.env
