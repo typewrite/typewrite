@@ -103,8 +103,8 @@
     "nunjucks": "^3.1.2",
     "pg": "^7.4.1",
     "reflect-metadata": "^0.1.12",
+    "typeorm": "^0.2.15",
     "routing-controllers": "^0.8.0",
-    "typeorm": "^0.2.10",
     "uuid": "^3.2.1",
     "winston": "^3.0.0-rc1",
     "winston-daily-rotate-file": "^2.0.0-rc.1"
