@@ -106,7 +106,7 @@
     "typeorm": "^0.2.15",
     "routing-controllers": "^0.8.0",
     "uuid": "^3.2.1",
-    "winston": "^3.0.0-rc1",
+    "winston": "^3.0.0",
     "winston-daily-rotate-file": "^2.0.0-rc.1"
   }
 }
