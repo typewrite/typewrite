@@ -79,7 +79,7 @@
     "replace-in-file": "^3.1.1",
     "run-sequence": "^2.2.1",
     "shelljs": "^0.8.1",
-    "snyk": "^1.130.0",
+    "snyk": "^1.996.0",
     "source-map-support": "^0.5.3",
     "ts-node": "^5.0.1",
     "tslib": "^1.9.0",
