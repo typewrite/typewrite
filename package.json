@@ -93,7 +93,7 @@
     "cors": "^2.8.4",
     "debug": "^3.1.0",
     "dotenv": "^5.0.1",
-    "express": "^4.16.2",
+    "express": "^4.17.3",
     "helmet": "^3.21.1",
     "https": "^1.0.0",
     "jsonwebtoken": "^8.2.0",
